@@ -1,0 +1,12 @@
+# .dev.vars로 복사해서 사용 (git에 커밋되지 않음)
+
+# --- 로컬 개발 (supabase start, 리포 루트에서 실행) ---
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
+
+# --- 원격(supabase.com) 사용 시 ---
+# Dashboard > Settings > Database > Connection string (Transaction pooler, 포트 6543)
+# DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+# Dashboard > Settings > API > JWT Secret
+# SUPABASE_JWT_SECRET=<jwt-secret>
