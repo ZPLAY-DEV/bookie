@@ -1,6 +1,13 @@
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { lessonPreps, lessons, lessonSteps, materials, weeks } from '../src/db/schema.ts'
+import {
+  lessonPreps,
+  lessons,
+  lessonSteps,
+  materials,
+  users,
+  weeks,
+} from '../src/db/schema.ts'
 
 // 로컬 개발용 시드. 실행: pnpm db:seed (DATABASE_URL로 덮어쓰기 가능)
 const databaseUrl =
@@ -191,6 +198,22 @@ async function seed() {
   console.log(
     `seeded: ${insertedWeeks.length} weeks, ${WEEK1_LESSONS.length} lessons`,
   )
+
+  // 관리자 사용자 — 로컬 auth 계정(admin@bookie.dev)과 매핑해 role=admin 부여
+  const ADMIN_EMAIL = 'admin@bookie.dev'
+  const [authUser] =
+    await client`select id from auth.users where email = ${ADMIN_EMAIL}`
+  if (authUser) {
+    await db
+      .insert(users)
+      .values({ id: authUser.id, name: '관리자', role: 'admin' })
+      .onConflictDoUpdate({ target: users.id, set: { role: 'admin' } })
+    console.log(`admin linked: ${ADMIN_EMAIL}`)
+  } else {
+    console.warn(
+      `auth user ${ADMIN_EMAIL} 없음 — Studio(Authentication)에서 계정 생성 후 pnpm db:seed 재실행`,
+    )
+  }
 }
 
 seed()

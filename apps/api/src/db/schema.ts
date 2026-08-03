@@ -1,21 +1,35 @@
 import {
   integer,
   pgTable,
+  pgView,
   smallint,
   text,
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core'
 
-// Supabase Auth 사용자(auth.users)와 1:1로 매핑되는 앱 프로필
-export const profiles = pgTable('profiles', {
+// Supabase Auth 사용자(auth.users)와 1:1로 매핑되는 앱 사용자
+export const users = pgTable('users', {
   id: uuid('id').primaryKey(), // Supabase auth user id
-  displayName: text('display_name'),
-  avatarUrl: text('avatar_url'),
+  socialUserId: text('social_user_id'), // 소셜 제공자(카카오 등) 고유 ID
+  name: text('name'),
+  role: text('role').notNull().default('user'), // user | admin
+  profileImageUrl: text('profile_image_url'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
 })
+
+// users(role=admin) + auth.users.email 조인 뷰 — 콘솔 관리자 검증에 사용.
+// auth 스키마를 참조하므로 SQL 마이그레이션으로 직접 생성한다 (.existing()).
+export const adminUsers = pgView('admin_users', {
+  id: uuid('id').notNull(),
+  email: text('email'),
+  name: text('name'),
+  role: text('role').notNull(),
+  profileImageUrl: text('profile_image_url'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+}).existing()
 
 // 주차 (1주차 ~ 12주차, 주 테마)
 export const weeks = pgTable('weeks', {

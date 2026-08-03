@@ -46,10 +46,13 @@ console (Refine :5174)
 ## 인증 흐름
 
 1. `/login` (Refine AuthPage) → `providers/auth.ts` → supabase-js `signInWithPassword`
-2. 세션은 localStorage에 영속화, 만료 시 supabase-js가 자동 리프레시
-3. 모든 API 호출 직전 `auth.getSession()`으로 현재 토큰을 꺼내 Bearer 헤더에 첨부
+2. 로그인 성공 후 `GET /api/users/me`로 **관리자 검증** — API가 `admin_users` 뷰(`users` 테이블의 `role=admin` + `auth.users.email` 조인)를 조회해 `isAdmin`을 내려주고, 관리자가 아니면 즉시 signOut + "관리자 계정이 아닙니다". `check()`(라우트 진입 시)에서도 같은 검증을 반복한다
+3. 세션은 localStorage에 영속화, 만료 시 supabase-js가 자동 리프레시
+4. 모든 API 호출 직전 `auth.getSession()`으로 현재 토큰을 꺼내 Bearer 헤더에 첨부
 
-**로컬 개발 계정**: Studio(http://127.0.0.1:54323) > Authentication에서 생성하거나, 이미 시드된 `admin@bookie.dev / bookie-dev-1234` 사용. (회원가입 UI는 콘솔에 노출하지 않음 — 관리자 계정은 수동 발급)
+**사용자 모델**: `users` 테이블(id = auth user id, social_user_id, name, role, profile_image_url) — auth 계정이 있어도 `users.role = 'admin'`이 아니면 콘솔 접근 불가. 관리자 발급 = `users`에 role=admin 행 추가.
+
+**로컬 개발 계정**: Studio(http://127.0.0.1:54323) > Authentication에서 `admin@bookie.dev / bookie-dev-1234` 계정을 만들고 `pnpm db:seed`를 실행하면 해당 계정이 role=admin으로 연결된다. (회원가입 UI는 콘솔에 노출하지 않음 — 관리자 계정은 수동 발급)
 
 ## 미구현 / 다음 단계
 
