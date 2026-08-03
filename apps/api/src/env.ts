@@ -1,7 +1,10 @@
+import type { R2Bucket } from '@cloudflare/workers-types'
+
 export type AppBindings = {
   DATABASE_URL: string
   SUPABASE_URL: string
   SUPABASE_JWT_SECRET: string
+  MEDIA: R2Bucket
 }
 
 export type AuthUser = {

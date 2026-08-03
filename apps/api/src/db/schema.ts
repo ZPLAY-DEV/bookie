@@ -68,5 +68,5 @@ export const materials = pgTable('materials', {
     .references(() => lessons.id),
   kind: text('kind').notNull(), // guide(지도안) | resource(수업자료)
   fileName: text('file_name').notNull(),
-  storagePath: text('storage_path').notNull(), // Supabase Storage 경로
+  storagePath: text('storage_path').notNull(), // R2(media 버킷) 오브젝트 키
 })

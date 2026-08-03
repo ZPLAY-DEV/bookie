@@ -1,5 +1,5 @@
 {
-  "name": "bookie",
+  "name": "BookieTalkie",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,7 +10,7 @@
     "dev:console": "pnpm --filter console dev"
   },
   "keywords": [],
-  "author": "",
+  "author": "Chuck JS. Oh",
   "license": "ISC",
   "packageManager": "pnpm@10.33.2"
 }

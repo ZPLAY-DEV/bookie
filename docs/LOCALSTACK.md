@@ -62,6 +62,10 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 # 3. DB 스키마 적용 (Drizzle이 스키마 오너 — supabase 마이그레이션은 쓰지 않는다)
 cd apps/api
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres pnpm db:migrate
+
+# 4. 데모 데이터 시드 — DB(주차/수업) + 로컬 R2(수업 이미지·자료 파일)
+pnpm db:seed
+pnpm r2:seed
 ```
 
 로컬 스택의 anon key / JWT secret은 모든 로컬 Supabase가 공유하는 **공개 데모 값**이라 `.dev.vars.example`에 그대로 커밋되어 있다. 원격 프로젝트의 실제 키만 비밀이다.
@@ -84,7 +88,7 @@ pnpm dev:web          # http://localhost:5173
 `pnpm dev:api`가 실행하는 `wrangler dev`의 내부 구조:
 
 - **workerd** — Cloudflare가 프로덕션에서 쓰는 것과 동일한 오픈소스 Workers 런타임. 로컬에서 Worker 코드를 프로덕션과 같은 V8 isolate 환경으로 실행하므로 "로컬에선 됐는데 배포하면 안 되는" 류의 런타임 차이가 거의 없다.
-- **Miniflare** — KV/R2/D1/Queues 등 Cloudflare 바인딩의 로컬 시뮬레이터. bookie는 아직 바인딩을 쓰지 않지만, 추가하면 별도 설정 없이 로컬에서 동작하고 데이터는 `apps/api/.wrangler/state/`에 저장된다 (gitignore 대상).
+- **Miniflare** — KV/R2/D1/Queues 등 Cloudflare 바인딩의 로컬 시뮬레이터. bookie는 R2 `media` 버킷(`MEDIA` 바인딩)을 수업 이미지·자료 저장소로 쓰며, 로컬에서는 별도 설정·계정 없이 시뮬레이션된다. 데이터는 `apps/api/.wrangler/state/`에 저장된다 (gitignore 대상). 시드는 `pnpm r2:seed`, 개별 파일 넣기는 `npx wrangler r2 object put media/<key> --file <f> --local`.
 - **`nodejs_compat`** — `wrangler.jsonc`의 `compatibility_flags`. postgres.js 드라이버가 `node:net`/`node:tls`를 쓰기 때문에 필수. 제거하면 DB 연결이 안 된다.
 - **`.dev.vars`** — 로컬 전용 시크릿 파일. `wrangler dev`가 자동으로 읽어 `c.env`에 주입한다. 배포 환경에서는 `wrangler secret put`으로 등록한 값이 같은 자리에 들어온다 (코드 변경 없음).
 - **타입 생성** — `pnpm cf-typegen`(`wrangler types`)이 바인딩 타입을 생성한다. 현재는 `src/env.ts`에 수동 정의한 `AppBindings`를 쓰고 있으므로 바인딩 추가 시 둘 중 하나로 통일할 것.

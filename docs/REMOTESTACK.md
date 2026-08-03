@@ -14,18 +14,22 @@ bookie의 원격(프로덕션) 스택 구성과 배포 방법. 로컬 개발은 
    │       ▼
    └── apps/api  → Cloudflare Workers ("api")
            │  postgres.js (Hyperdrive 또는 pooler 직결)
+           ├─ Cloudflare R2 "media" 버킷 (미구성)
+           │   수업 이미지 + 지도안/수업자료 파일 — /api/files/* 로 서빙
            ▼
        Supabase 원격 프로젝트 (미구성)
         ├─ Postgres 17 (weeks/lessons/... 테이블)
-        ├─ Auth — 로그인/가입은 web이 직접, api는 JWT 검증만
-        └─ Storage — 지도안/수업자료 파일 (예정)
+        └─ Auth — 로그인/가입은 web이 직접, api는 JWT 검증만
 ```
+
+> 파일 저장소는 비용상 Supabase Storage 대신 **Cloudflare R2**를 쓴다 (이그레스 무료).
 
 | 리소스 | 역할 | 상태 |
 |---|---|---|
 | Cloudflare Workers | Hono API (`wrangler.jsonc`, name: `api`) | 설정 완료, 미배포 |
 | Cloudflare Pages | web 정적 호스팅 (SAD 기준) | 미구성 |
-| Supabase 프로젝트 | Postgres + Auth + Storage | 미구성 |
+| Cloudflare R2 | `media` 버킷 — 수업 이미지·자료 파일 (`MEDIA` 바인딩) | 미구성 — 배포 전 `wrangler r2 bucket create media` |
+| Supabase 프로젝트 | Postgres + Auth | 미구성 |
 
 ## 첫 배포 절차
 

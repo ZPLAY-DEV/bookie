@@ -12,7 +12,9 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node scripts/seed.ts",
+    "r2:seed": "bash scripts/seed-r2.sh"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.0",

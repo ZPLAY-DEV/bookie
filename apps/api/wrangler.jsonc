@@ -16,12 +16,14 @@
   //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   //   }
   // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
+  // 수업 이미지·자료 저장소. 로컬(wrangler dev)에서는 Miniflare가 시뮬레이션하며
+  // 데이터는 .wrangler/state/에 저장된다. 로컬 시드: pnpm r2:seed
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "media"
+    }
+  ],
   // "d1_databases": [
   //   {
   //     "binding": "MY_DB",
