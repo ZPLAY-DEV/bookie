@@ -5,7 +5,7 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { AppSidebar } from '@/components/app-sidebar'
 import { LessonHero } from '@/components/lesson-hero'
-import { api, lessonFileUrl } from '@/lib/api'
+import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { meQuery, weekDetailQuery, weeksQuery, type Lesson, type Me } from '@/lib/queries'
@@ -244,7 +244,7 @@ function LessonCard({ lesson, onSelect }: { lesson: Lesson; onSelect: () => void
     >
       {lesson.thumbnailFile && (
         <img
-          src={lessonFileUrl(lesson.thumbnailFile)}
+          src={lesson.thumbnailFile}
           alt=""
           className="aspect-[338/194] w-full object-cover"
         />

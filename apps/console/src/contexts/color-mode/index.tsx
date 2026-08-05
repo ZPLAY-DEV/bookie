@@ -51,10 +51,14 @@ export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
       }}
     >
       <ConfigProvider
-        // you can change the theme colors here. example: ...RefineThemes.Magenta,
+        // 북키톡키 브랜드 테마 — 남색(#2E2982) 주색 + 웹 사이드바 연보라 배경
         theme={{
           ...RefineThemes.Blue,
           algorithm: mode === "light" ? defaultAlgorithm : darkAlgorithm,
+          token: {
+            colorPrimary: "#2e2982",
+            colorBgLayout: "#f3f3f9",
+          },
         }}
       >
         {children}

@@ -22,6 +22,20 @@ import { dataProvider } from "./providers/data";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { Header } from "./components/header";
 import authProvider from "./providers/auth";
+
+// 특정 문구만 바꾸기 위한 최소 i18n — 나머지 키는 기본 문구를 그대로 통과시킨다
+const i18nProvider = {
+  translate: (key: string, options?: unknown, defaultMessage?: string) => {
+    const overrides: Record<string, string> = {
+      "pages.login.title": "관리자 속으로",
+    };
+    const fallback =
+      typeof options === "string" ? options : defaultMessage;
+    return overrides[key] ?? fallback ?? key;
+  },
+  changeLocale: () => Promise.resolve(),
+  getLocale: () => "ko",
+};
 import { WeekCreate, WeekEdit, WeekList } from "./pages/weeks";
 import {
   LessonCreate,
@@ -46,6 +60,7 @@ function App() {
               <Refine
                 dataProvider={dataProvider}
                 authProvider={authProvider}
+                i18nProvider={i18nProvider}
                 routerProvider={routerProvider}
                 notificationProvider={useNotificationProvider}
                 resources={[

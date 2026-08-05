@@ -7,7 +7,7 @@ import {
   users,
   weeks,
   type LessonFlow,
-  type LessonMediaCue,
+  type LessonMediaItem,
   type LessonPrep,
 } from '../src/db/schema.ts'
 
@@ -16,6 +16,9 @@ import {
 const databaseUrl =
   process.env.DATABASE_URL ??
   'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
+
+// 미디어 재생목록 value는 https 전체 URL 규칙 — 파일 서버 베이스
+const FILES_BASE = 'https://cdn.bktk.kr/lessons'
 
 const client = postgres(databaseUrl, { prepare: false })
 const db = drizzle(client)
@@ -44,7 +47,7 @@ type LessonSeed = {
   durationMin: number
   flow: LessonFlow
   preps: LessonPrep[]
-  media: LessonMediaCue[]
+  media: LessonMediaItem[]
 }
 
 // 일차정보 + 수업단계 + 준비물 + 미디어 시트의 1주차 실데이터
@@ -115,7 +118,13 @@ const WEEK1_LESSONS: LessonSeed[] = [
       { name: '분단 리듬 표시판', quantity: '4개' },
       { name: '블루투스 스피커 연결', quantity: '1대' },
     ],
-    media: [{ slideNo: 5, kind: 'audio', source: 'w1d3_audio1.mp3' }],
+    // 이미지 2장 → 음악 → 이미지: 음악은 사용자가 재생 후 수동 진행
+    media: [
+      { index: 1, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide01.png`, duration: 5 },
+      { index: 2, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide02.png`, duration: 5 },
+      { index: 3, type: 'music', value: `${FILES_BASE}/w1d3/w1d3_audio1.mp3`, duration: null },
+      { index: 4, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide03.png`, duration: 5 },
+    ],
   },
   {
     dayIndex: 4,
@@ -136,13 +145,18 @@ const WEEK1_LESSONS: LessonSeed[] = [
       { name: '시원한 몸 체조 동작 카드', quantity: '1세트' },
       { name: '개인 매트', quantity: '24개' },
     ],
+    // 이미지 → 유튜브 → 이미지 2장
     media: [
+      { index: 1, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide01.png`, duration: 5 },
       {
-        slideNo: 2,
-        kind: 'youtube',
-        source:
+        index: 2,
+        type: 'youtube',
+        value:
           'https://www.youtube.com/watch?v=K7nRz4Ka_KM&list=RDK7nRz4Ka_KM&start_radio=1',
+        duration: null,
       },
+      { index: 3, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide02.png`, duration: 5 },
+      { index: 4, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide03.png`, duration: 5 },
     ],
   },
   {
@@ -198,13 +212,21 @@ async function seed() {
       title: l.title,
       description: l.description,
       durationMin: l.durationMin,
-      // 파일명 규칙: w{주차}d{일차}.png / _lesson.pdf / _guide.pdf
-      thumbnailFile: `w1d${l.dayIndex}.png`,
-      lessonPdfFile: `w1d${l.dayIndex}_lesson.pdf`,
-      guidePdfFile: `w1d${l.dayIndex}_guide.pdf`,
+      // 파일명 규칙: w{주차}d{일차}.png / _lesson.pdf / _guide.pdf — full URL로 저장
+      thumbnailFile: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}.png`,
+      lessonPdfFile: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_lesson.pdf`,
+      guidePdfFile: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_guide.pdf`,
       flow: l.flow,
       preps: l.preps,
-      media: l.media,
+      media:
+        l.media.length > 0
+          ? l.media
+          : [1, 2, 3].map((n) => ({
+              index: n,
+              type: 'image' as const,
+              value: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_slide0${n}.png`,
+              duration: 5,
+            })),
     })),
   )
 

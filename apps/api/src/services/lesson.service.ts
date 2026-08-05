@@ -79,7 +79,7 @@ export async function deleteWeek(db: Database, id: number) {
 
 // --- lessons ---
 
-import type { LessonFlow, LessonMediaCue, LessonPrep } from '../db/schema'
+import type { LessonFlow, LessonMediaItem, LessonPrep } from '../db/schema'
 
 export type LessonValues = {
   weekId: number
@@ -94,7 +94,7 @@ export type LessonValues = {
   slideCount?: number | null
   flow?: LessonFlow | null
   preps?: LessonPrep[]
-  media?: LessonMediaCue[]
+  media?: LessonMediaItem[]
 }
 
 export async function listLessons(

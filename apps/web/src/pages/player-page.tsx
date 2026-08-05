@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams, useRouter } from '@tanstack/react-router'
+import { Link, useParams, useRouter, useSearch } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowLeft01Icon,
@@ -10,7 +10,6 @@ import {
 } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
-import { lessonFileUrl } from '@/lib/api'
 import { lessonQuery } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 
@@ -40,26 +39,40 @@ function formatElapsed(seconds: number) {
 // 수업 재생 플레이어 — 슬라이드 이미지 순차 렌더 + 미디어 큐 오버레이 (PRD §5)
 export function PlayerPage() {
   const { lessonId } = useParams({ from: '/play/$lessonId' })
+  const { start } = useSearch({ from: '/play/$lessonId' })
   const router = useRouter()
   const { data: lesson } = useQuery(lessonQuery(Number(lessonId)))
 
-  const [slideIdx, setSlideIdx] = useState(0)
+  const [slideIdx, setSlideIdx] = useState(() => Math.max((start ?? 1) - 1, 0))
   // 수업 이탈 확인 팝업 — '수업 마치기'에서만 사유를 묻고 이동
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [audioPlaying, setAudioPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const slideCount = lesson?.slideCount ?? 0
-  // 파일명 규칙에서 폴더 프리픽스 유도 (w1d5.png → w1d5)
-  const prefix = lesson?.thumbnailFile?.split('.')[0] ?? null
-  const slideUrl = (i: number) =>
-    prefix
-      ? lessonFileUrl(`${prefix}_slide${String(i + 1).padStart(2, '0')}.png`)
-      : null
+  // 재생목록: media가 있으면 그것이 곧 슬라이드쇼. 없으면 slideCount 이미지 폴백.
+  // 폴백 슬라이드 URL은 썸네일 full URL(…/w1d1/w1d1.png)에서 폴더/접두어를 유도한다.
+  const thumbUrl = lesson?.thumbnailFile ?? null
+  const folderUrl = thumbUrl?.slice(0, thumbUrl.lastIndexOf('/')) ?? null
+  const prefix = thumbUrl?.split('/').pop()?.split('.')[0] ?? null
+  const playlist: { type: 'image' | 'youtube' | 'music'; value: string; duration: number | null }[] =
+    lesson == null
+      ? []
+      : lesson.media.length > 0
+        ? lesson.media
+        : Array.from({ length: lesson.slideCount ?? 0 }, (_, i) => ({
+            type: 'image' as const,
+            value:
+              folderUrl && prefix
+                ? `${folderUrl}/${prefix}_slide${String(i + 1).padStart(2, '0')}.png`
+                : '',
+            duration: null,
+          }))
+  const total = playlist.length
+  const current = playlist[slideIdx]
 
   const canPrev = slideIdx > 0
-  const canNext = slideIdx < slideCount - 1
+  const canNext = slideIdx < total - 1
 
   // 경과 타이머
   useEffect(() => {
@@ -70,12 +83,12 @@ export function PlayerPage() {
   // 키보드 좌우 이동
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowRight') setSlideIdx((i) => Math.min(i + 1, Math.max(slideCount - 1, 0)))
+      if (e.key === 'ArrowRight') setSlideIdx((i) => Math.min(i + 1, Math.max(total - 1, 0)))
       if (e.key === 'ArrowLeft') setSlideIdx((i) => Math.max(i - 1, 0))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [slideCount])
+  }, [total])
 
   // 슬라이드 전환 시 오디오 정지
   useEffect(() => {
@@ -83,9 +96,18 @@ export function PlayerPage() {
     setAudioPlaying(false)
   }, [slideIdx])
 
-  const cue = lesson?.media.find((m) => m.slideNo === slideIdx + 1)
-  const embedUrl = cue?.kind === 'youtube' ? youtubeEmbedUrl(cue.source) : null
-  const audioUrl = cue?.kind === 'audio' ? lessonFileUrl(cue.source) : null
+  // 이미지 항목은 duration(초) 후 자동으로 다음 항목으로
+  useEffect(() => {
+    if (current?.type !== 'image' || current.duration == null || !canNext) return
+    const t = setTimeout(
+      () => setSlideIdx((i) => Math.min(i + 1, total - 1)),
+      current.duration * 1000,
+    )
+    return () => clearTimeout(t)
+  }, [slideIdx, current?.type, current?.duration, canNext, total])
+
+  const embedUrl = current?.type === 'youtube' ? youtubeEmbedUrl(current.value) : null
+  const audioUrl = current?.type === 'music' ? current.value : null
 
   function toggleAudio() {
     const el = audioRef.current
@@ -141,61 +163,65 @@ export function PlayerPage() {
         </button>
 
         <div className="relative aspect-video w-full max-w-[1400px] overflow-hidden rounded-lg border bg-muted">
-          {slideCount > 0 && slideUrl(slideIdx) ? (
+          {current == null ? (
+            <div className="flex size-full items-center justify-center text-muted-foreground">
+              재생목록이 아직 준비되지 않았어요
+            </div>
+          ) : current.type === 'image' ? (
             <img
-              src={slideUrl(slideIdx)!}
+              src={current.value}
               alt={`슬라이드 ${slideIdx + 1}`}
               className="size-full object-contain"
             />
-          ) : (
-            <div className="flex size-full items-center justify-center text-muted-foreground">
-              슬라이드가 아직 준비되지 않았어요
-            </div>
-          )}
-
-          {/* 미디어 큐 오버레이 — MVP는 중앙 배치 (PRD §10) */}
-          {embedUrl && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          ) : current.type === 'youtube' && embedUrl ? (
+            // 유튜브 스텝 — 강사가 재생 후 화살표로 직접 진행
+            <div className="flex size-full items-center justify-center bg-heading/95">
               <iframe
                 src={embedUrl}
                 title="수업 영상"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                className="aspect-video w-[62%] rounded-xl shadow-2xl"
+                className="aspect-video w-[86%] rounded-xl shadow-2xl"
               />
             </div>
-          )}
-          {audioUrl && (
-            <>
-              <audio ref={audioRef} src={audioUrl} onEnded={() => setAudioPlaying(false)} />
+          ) : (
+            // 음악 스텝 — 재생/일시정지 후 직접 진행
+            <div className="flex size-full flex-col items-center justify-center gap-6 bg-heading/95">
+              {audioUrl && (
+                <audio ref={audioRef} src={audioUrl} onEnded={() => setAudioPlaying(false)} />
+              )}
+              <span className="text-6xl">🎵</span>
               <button
                 type="button"
                 onClick={toggleAudio}
                 title={audioPlaying ? '일시정지' : '음악 재생'}
                 className={cn(
-                  'absolute bottom-6 left-1/2 flex size-16 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-xl transition',
-                  audioPlaying ? 'bg-heading' : 'bg-[#f5a031] hover:brightness-105',
+                  'flex size-20 cursor-pointer items-center justify-center rounded-full text-white shadow-xl transition',
+                  audioPlaying ? 'bg-accent' : 'bg-[#f5a031] hover:brightness-105',
                 )}
               >
                 <HugeiconsIcon
                   icon={audioPlaying ? PauseIcon : PlayIcon}
-                  className="size-7"
+                  className="size-9"
                   fill="currentColor"
                 />
               </button>
-            </>
+              <p className="text-sm font-semibold text-white/80">
+                재생이 끝나면 화살표로 다음으로 넘어가세요
+              </p>
+            </div>
           )}
 
-          {slideCount > 0 && (
+          {total > 0 && (
             <span className="absolute right-4 bottom-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white tabular-nums">
-              {slideIdx + 1} / {slideCount}
+              {slideIdx + 1} / {total}
             </span>
           )}
         </div>
 
         <button
           type="button"
-          onClick={() => setSlideIdx((i) => Math.min(i + 1, Math.max(slideCount - 1, 0)))}
+          onClick={() => setSlideIdx((i) => Math.min(i + 1, Math.max(total - 1, 0)))}
           disabled={!canNext}
           title="다음 슬라이드"
           className="flex size-14 shrink-0 items-center justify-center rounded-full bg-secondary text-heading transition hover:bg-secondary/70 disabled:opacity-40"
@@ -211,9 +237,9 @@ export function PlayerPage() {
           />
         )}
 
-        {/* 다음 슬라이드 사전 캐싱 */}
-        {canNext && slideUrl(slideIdx + 1) && (
-          <img src={slideUrl(slideIdx + 1)!} alt="" className="hidden" />
+        {/* 다음 이미지 사전 캐싱 */}
+        {canNext && playlist[slideIdx + 1]?.type === 'image' && (
+          <img src={playlist[slideIdx + 1].value} alt="" className="hidden" />
         )}
       </div>
     </div>

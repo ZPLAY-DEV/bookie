@@ -78,11 +78,14 @@ export type LessonFlow = {
 }
 // 준비물 시트 한 품목
 export type LessonPrep = { name: string; quantity: string }
-// 미디어 시트 한 큐 (웹 재생 시 슬라이드 위에 얹음)
-export type LessonMediaCue = {
-  slideNo: number
-  kind: 'youtube' | 'audio' | 'video'
-  source: string // 유튜브=링크, 음악·영상=파일명
+// 수업 재생목록 한 항목 — 이미지·유튜브·음악을 순서대로 섞어 구성한다.
+// value는 https:// 로 시작하는 전체 URL만 허용한다.
+// duration: image = 자동 넘김 초, youtube/music = null (사용자가 재생 후 수동 진행)
+export type LessonMediaItem = {
+  index: number
+  type: 'image' | 'youtube' | 'music'
+  value: string
+  duration: number | null
 }
 
 // 일차별 수업 — 입력 템플릿의 일차정보 시트와 1:1.
@@ -98,11 +101,11 @@ export const lessons = pgTable('lessons', {
   title: text('title').notNull(), // 차시명
   description: text('description'), // 수업 설명
   durationMin: integer('duration_min'), // 시간(분), 예: 80
-  thumbnailFile: text('thumbnail_file'), // 예: w1d5.png
-  lessonPdfFile: text('lesson_pdf_file'), // 예: w1d5_lesson.pdf (다운로드용)
-  guidePdfFile: text('guide_pdf_file'), // 예: w1d5_guide.pdf (다운로드용)
+  thumbnailFile: text('thumbnail_file'), // full URL 예: https://api.bktk.kr/api/files/lessons/w1d5/w1d5.png
+  lessonPdfFile: text('lesson_pdf_file'), // full URL (다운로드용)
+  guidePdfFile: text('guide_pdf_file'), // full URL (다운로드용)
   slideCount: integer('slide_count'), // 웹 재생용 슬라이드 장수 (인제스트 시 산출)
   flow: jsonb('flow').$type<LessonFlow>(), // 수업단계
   preps: jsonb('preps').$type<LessonPrep[]>().notNull().default([]), // 준비물
-  media: jsonb('media').$type<LessonMediaCue[]>().notNull().default([]), // 미디어 큐
+  media: jsonb('media').$type<LessonMediaItem[]>().notNull().default([]), // 재생목록
 })

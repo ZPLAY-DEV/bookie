@@ -2,7 +2,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { FileDownloadIcon, File01Icon, PlayIcon } from '@hugeicons/core-free-icons'
 
 import { TextAnimate } from '@/components/magicui/text-animate'
-import { lessonFileUrl } from '@/lib/api'
 import { Link } from '@tanstack/react-router'
 
 import type { Lesson } from '@/lib/queries'
@@ -34,7 +33,7 @@ export function LessonHero({
     <section className="flex gap-8 rounded-3xl border bg-card p-4 shadow-sm">
       {lesson.thumbnailFile && (
         <img
-          src={lessonFileUrl(lesson.thumbnailFile)}
+          src={lesson.thumbnailFile}
           alt=""
           className="aspect-square w-[37%] shrink-0 rounded-2xl object-cover"
         />
@@ -132,7 +131,7 @@ export function LessonHero({
           <div className="flex items-center gap-7">
             {lesson.guidePdfFile && (
               <a
-                href={lessonFileUrl(lesson.guidePdfFile, lesson.guidePdfFile)}
+                href={lesson.guidePdfFile}
                 className="flex items-center gap-1.5 text-sm font-semibold text-heading underline underline-offset-3"
               >
                 <HugeiconsIcon icon={FileDownloadIcon} className="size-4.5" />
@@ -141,7 +140,7 @@ export function LessonHero({
             )}
             {lesson.lessonPdfFile && (
               <a
-                href={lessonFileUrl(lesson.lessonPdfFile, lesson.lessonPdfFile)}
+                href={lesson.lessonPdfFile}
                 className="flex items-center gap-1.5 text-sm font-semibold text-heading underline underline-offset-3"
               >
                 <HugeiconsIcon icon={File01Icon} className="size-4.5" />

@@ -44,6 +44,11 @@ const curriculumRoute = createRoute({
 const playRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/play/$lessonId',
+  // ?start=N 으로 재생목록 중간부터 시작할 수 있다
+  validateSearch: (search: Record<string, unknown>): { start?: number } => {
+    const n = Number(search.start)
+    return Number.isFinite(n) && n > 0 ? { start: n } : {}
+  },
   beforeLoad: requireSession,
   component: PlayerPage,
 })

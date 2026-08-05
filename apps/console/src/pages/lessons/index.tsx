@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Create,
   DeleteButton,
@@ -14,6 +14,9 @@ import {
 import { useNavigation, useShow } from "@refinedev/core";
 import {
   DeleteOutlined,
+  EyeOutlined,
+  FilePdfOutlined,
+  LoadingOutlined,
   PlusOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
@@ -28,6 +31,7 @@ import {
   Image,
   Input,
   InputNumber,
+  Popconfirm,
   Row,
   Select,
   Space,
@@ -35,9 +39,12 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Upload,
+  message,
   type FormInstance,
 } from "antd";
 import { dataProvider } from "../../providers/data";
+import { supabaseClient } from "../../providers/supabase-client";
 import { InlineEditCell } from "../../components/inline-edit-cell";
 
 type FlowStep = { title: string; durationMin: number };
@@ -62,16 +69,209 @@ type Lesson = {
   slideCount: number | null;
   flow: LessonFlow | null;
   preps: { name: string; quantity: string }[];
-  media: { slideNo: number; kind: string; source: string }[];
+  media: { index: number; type: string; value: string; duration: number | null }[];
 };
 
 type Week = { id: number; weekNo: number; theme: string };
 
-// R2 수업 자료 URL — 파일명 규칙(w{주차}d{일차}*)에서 폴더를 유도
-const lessonFileUrl = (filename: string, downloadName?: string) => {
-  const folder = filename.split("_")[0].split(".")[0];
-  const url = `${dataProvider.getApiUrl()}/api/files/lessons/${folder}/${filename}`;
-  return downloadName ? `${url}?filename=${encodeURIComponent(downloadName)}` : url;
+// 자료 파일은 R2 커스텀 도메인(cdn.bktk.kr)의 full URL로 저장한다.
+// 규칙 파일명의 full URL — 실제 파일은 lessons/w{주차}d{일차}/ 폴더에 올라간다
+const CDN_BASE = "https://cdn.bktk.kr";
+const ruleFileUrl = (prefix: string, filename: string) =>
+  `${CDN_BASE}/lessons/${prefix}/${filename}`;
+
+// presign URL을 받아 브라우저에서 R2로 직접 업로드
+async function uploadToR2(key: string, file: File) {
+  const { data } = await supabaseClient.auth.getSession();
+  const token = data.session?.access_token;
+  const presignRes = await fetch(`${dataProvider.getApiUrl()}/api/files/presign`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ key }),
+  });
+  if (!presignRes.ok) throw new Error("업로드 URL 발급에 실패했어요");
+  const { path } = (await presignRes.json()) as { path: string };
+  const putRes = await fetch(`${dataProvider.getApiUrl()}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: file,
+  });
+  if (!putRes.ok) throw new Error("파일 업로드에 실패했어요");
+}
+
+const FILE_BOX: React.CSSProperties = {
+  width: 64,
+  height: 64,
+  borderRadius: 8,
+};
+
+const SLOT_EXTENSIONS: Record<"image" | "pdf", string[]> = {
+  image: ["png", "jpg", "jpeg", "webp", "gif"],
+  pdf: ["pdf"],
+};
+
+// 자료 파일 한 칸 — 값이 있으면 미리보기 + (X) 삭제, 없으면 R2 직접 업로드 드롭존
+const FileSlot = ({
+  form,
+  name,
+  label,
+  kind,
+  prefix,
+  standardBase,
+  placeholder,
+}: {
+  form: FormInstance;
+  name: string;
+  label: string;
+  kind: "image" | "pdf";
+  prefix: string | null;
+  // 업로드 시 규칙 파일명의 확장자 앞부분 (예: w1d1, w1d1_lesson)
+  standardBase: string | null;
+  placeholder: string;
+}) => {
+  const value = Form.useWatch(name, form) as string | null | undefined;
+  const [uploading, setUploading] = useState(false);
+  const [hover, setHover] = useState(false);
+  // 같은 파일명으로 재업로드해도 미리보기가 캐시를 무시하도록
+  const [previewNonce, setPreviewNonce] = useState(0);
+
+  const handleFile = async (file: File) => {
+    if (!prefix || !standardBase) {
+      message.warning("주차와 일차를 먼저 선택해 주세요");
+      return;
+    }
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!SLOT_EXTENSIONS[kind].includes(ext)) {
+      message.error(
+        `${SLOT_EXTENSIONS[kind].join("/")} 파일만 업로드할 수 있어요`
+      );
+      return;
+    }
+    const filename = `${standardBase}.${ext}`;
+    setUploading(true);
+    try {
+      await uploadToR2(`lessons/${prefix}/${filename}`, file);
+      form.setFieldValue(name, ruleFileUrl(prefix, filename));
+      setPreviewNonce((n) => n + 1);
+      message.success(`${filename} 업로드 완료`);
+    } catch (e) {
+      message.error((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Form.Item label={label} style={{ marginBottom: 16 }}>
+      {/* 콜 폭 = 박스 64 + 거터 패딩 8 — 박스가 패딩을 침범하지 않아야 실제 8px 간격이 산다 */}
+      <Row gutter={8} align="middle" wrap={false}>
+        <Col flex="72px">
+          {value ? (
+            // antd Upload picture-card와 같은 카드 + hover 마스크 액션(보기/삭제)
+            <div
+              onMouseEnter={() => setHover(true)}
+              onMouseLeave={() => setHover(false)}
+              style={{
+                ...FILE_BOX,
+                position: "relative",
+                overflow: "hidden",
+                border: "1px solid #d9d9d9",
+                background: "#fafafa",
+              }}
+            >
+              {kind === "image" ? (
+                <Image
+                  key={previewNonce}
+                  src={`${value}${value.includes("?") ? "&" : "?"}v=${previewNonce}`}
+                  alt={`${label} 미리보기`}
+                  width={62}
+                  height={62}
+                  preview={false}
+                  style={{ objectFit: "cover" }}
+                  fallback="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' fill='%23f0f0f0'/><text x='32' y='36' text-anchor='middle' font-size='10' fill='%23999'>파일 없음</text></svg>"
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <FilePdfOutlined style={{ fontSize: 24, color: "#e5484d" }} />
+                </div>
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "rgba(0,0,0,0.45)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  fontSize: 15,
+                  opacity: hover ? 1 : 0,
+                  transition: "opacity 0.2s",
+                }}
+              >
+                <a href={value} target="_blank" rel="noreferrer" style={{ color: "#fff" }}>
+                  <EyeOutlined />
+                </a>
+                <Popconfirm
+                  title="정말로 지울까요?"
+                  okText="지우기"
+                  cancelText="취소"
+                  onConfirm={() => form.setFieldValue(name, null)}
+                >
+                  <DeleteOutlined style={{ color: "#fff", cursor: "pointer" }} />
+                </Popconfirm>
+              </div>
+            </div>
+          ) : (
+            <Upload.Dragger
+              accept={SLOT_EXTENSIONS[kind].map((e) => `.${e}`).join(",")}
+              showUploadList={false}
+              disabled={uploading}
+              customRequest={({ file }) => void handleFile(file as File)}
+              style={{ ...FILE_BOX, padding: 0 }}
+            >
+              {uploading ? (
+                <LoadingOutlined style={{ fontSize: 18 }} />
+              ) : (
+                <div style={{ fontSize: 10, color: "#999", lineHeight: 1.4 }}>
+                  여기까지
+                  <br />
+                  파일을 드래그 후
+                  <br />
+                  드롭 하세요.
+                </div>
+              )}
+            </Upload.Dragger>
+          )}
+        </Col>
+        <Col flex="auto">
+          <Form.Item
+            name={name}
+            style={{ marginBottom: 0 }}
+            rules={[
+              {
+                pattern: /^https:\/\/.+/,
+                message: "https:// 로 시작하는 전체 URL이어야 해요",
+              },
+            ]}
+          >
+            <Input allowClear placeholder={placeholder} />
+          </Form.Item>
+        </Col>
+      </Row>
+    </Form.Item>
+  );
 };
 
 const DAY_LABELS = ["월", "화", "수", "목", "금"];
@@ -79,7 +279,9 @@ const DAY_LABELS = ["월", "화", "수", "목", "금"];
 const DAY_CATEGORY = ["책놀이", "미술", "음악", "신체", "사회정서"];
 const ACTIVITY_LABELS = ["활동 ①", "활동 ②", "활동 ③", "활동 ④"];
 // 파일명 규칙에 맞는 값이면 주차/일차 변경 시 자동으로 갱신해도 안전하다
+// (값은 full URL — 마지막 경로 조각의 파일명으로 판단)
 const RULE_SHAPED = /^w\d+d\d+[._]/;
+const isRuleShaped = (v: string) => RULE_SHAPED.test(v.split("/").pop() ?? "");
 
 const useWeekSelect = () =>
   useSelect<Week>({
@@ -119,7 +321,7 @@ export const LessonList = () => {
               title="상세 보기"
             >
               {thumbnailFile ? (
-                <Avatar src={lessonFileUrl(thumbnailFile)} />
+                <Avatar src={thumbnailFile} />
               ) : (
                 <Avatar>-</Avatar>
               )}
@@ -249,16 +451,12 @@ export const LessonShow = () => {
             <Descriptions.Item label="파일">
               <Space direction="vertical" size={2}>
                 {lesson.lessonPdfFile ? (
-                  <a href={lessonFileUrl(lesson.lessonPdfFile, lesson.lessonPdfFile)}>
-                    {lesson.lessonPdfFile}
-                  </a>
+                  <a href={lesson.lessonPdfFile}>{lesson.lessonPdfFile}</a>
                 ) : (
                   "-"
                 )}
                 {lesson.guidePdfFile ? (
-                  <a href={lessonFileUrl(lesson.guidePdfFile, lesson.guidePdfFile)}>
-                    {lesson.guidePdfFile}
-                  </a>
+                  <a href={lesson.guidePdfFile}>{lesson.guidePdfFile}</a>
                 ) : (
                   "-"
                 )}
@@ -267,11 +465,11 @@ export const LessonShow = () => {
             <Descriptions.Item label="썸네일" span={2}>
               {lesson.thumbnailFile ? (
                 <Space direction="vertical">
-                  <Typography.Text copyable={{ text: lessonFileUrl(lesson.thumbnailFile) }}>
+                  <Typography.Text copyable={{ text: lesson.thumbnailFile }}>
                     {lesson.thumbnailFile}
                   </Typography.Text>
                   <Image
-                    src={lessonFileUrl(lesson.thumbnailFile)}
+                    src={lesson.thumbnailFile}
                     style={{ maxWidth: "100%" }}
                   />
                 </Space>
@@ -307,32 +505,40 @@ export const LessonShow = () => {
           </Table>
 
           <Divider />
-          <Typography.Title level={5}>미디어 (웹 재생 큐)</Typography.Title>
+          <Typography.Title level={5}>미디어 재생목록</Typography.Title>
           <Table
             dataSource={lesson.media.map((m, i) => ({ ...m, key: i }))}
             rowKey="key"
             size="small"
             pagination={false}
           >
-            <Table.Column dataIndex="slideNo" title="슬라이드" width={100} />
+            <Table.Column dataIndex="index" title="순서" width={70} />
             <Table.Column
-              dataIndex="kind"
+              dataIndex="type"
               title="종류"
               width={100}
-              render={(kind: string) => <Tag>{kind}</Tag>}
+              render={(type: string) => (
+                <Tag>{{ image: "이미지", youtube: "유튜브", music: "음악" }[type] ?? type}</Tag>
+              )}
             />
             <Table.Column
-              dataIndex="source"
-              title="링크/파일명"
-              render={(source: string, record: { kind: string }) =>
-                record.kind === "youtube" ? (
-                  <a href={source} target="_blank" rel="noreferrer">
-                    {source}
+              dataIndex="value"
+              title="URL/파일명"
+              render={(value: string, record: { type: string }) =>
+                record.type === "youtube" || value.startsWith("http") ? (
+                  <a href={value} target="_blank" rel="noreferrer">
+                    {value}
                   </a>
                 ) : (
-                  source
+                  value
                 )
               }
+            />
+            <Table.Column
+              dataIndex="duration"
+              title="표시 시간"
+              width={100}
+              render={(d: number | null) => (d != null ? `${d}초` : "수동 진행")}
             />
           </Table>
         </>
@@ -354,9 +560,14 @@ const normalizeValues = (values: Record<string, unknown>) => {
       wrapup?: Partial<FlowStep> | null;
     } | null;
     preps?: { name?: string; quantity?: string }[];
-    media?: { slideNo?: number; kind?: string; source?: string }[];
+    media?: { type?: string; value?: string; duration?: number | null }[];
     description?: string | null;
+    thumbnailFile?: string | null;
+    lessonPdfFile?: string | null;
+    guidePdfFile?: string | null;
   };
+  // allowClear로 비운 입력("")은 null로 저장
+  const fileOrNull = (f?: string | null) => (f?.trim() ? f.trim() : null);
   const step = (s?: Partial<FlowStep> | null): FlowStep | null =>
     s?.title?.trim()
       ? { title: s.title.trim(), durationMin: s.durationMin ?? 5 }
@@ -364,6 +575,9 @@ const normalizeValues = (values: Record<string, unknown>) => {
   return {
     ...values,
     description: v.description?.trim() ? v.description.trim() : null,
+    thumbnailFile: fileOrNull(v.thumbnailFile),
+    lessonPdfFile: fileOrNull(v.lessonPdfFile),
+    guidePdfFile: fileOrNull(v.guidePdfFile),
     flow: {
       intro: step(v.flow?.intro),
       activities: (v.flow?.activities ?? [])
@@ -376,12 +590,16 @@ const normalizeValues = (values: Record<string, unknown>) => {
       .filter((p) => p?.name?.trim())
       .map((p) => ({ name: p.name!.trim(), quantity: p.quantity?.trim() ?? "" })),
     media: (v.media ?? [])
-      .filter((m) => m?.source?.trim())
-      .map((m) => ({
-        slideNo: m.slideNo ?? 1,
-        kind: m.kind ?? "youtube",
-        source: m.source!.trim(),
-      })),
+      .filter((m) => m?.value?.trim())
+      .map((m, i) => {
+        const type = m.type ?? "image";
+        return {
+          index: i + 1, // 순서대로 자동 재부여
+          type,
+          value: m.value!.trim(),
+          duration: type === "image" ? (m.duration ?? 5) : null,
+        };
+      }),
   };
 };
 
@@ -406,7 +624,7 @@ const FlowStepRow = ({
         <Input placeholder="단계명 (권장 18자 이내)" allowClear />
       </Form.Item>
     </Col>
-    <Col flex="90px">
+    <Col flex="98px">
       <Form.Item name={[...namePath, "durationMin"]} noStyle>
         <InputNumber min={1} max={80} addonAfter="분" style={{ width: 90 }} />
       </Form.Item>
@@ -435,7 +653,6 @@ const LessonForm = ({
   const dayIndex = Form.useWatch("dayIndex", form);
   const durationMin = Form.useWatch("durationMin", form);
   const flow = Form.useWatch("flow", form) as LessonFlow | undefined;
-  const thumbnailFile = Form.useWatch("thumbnailFile", form) as string | undefined;
 
   const weekNo = weekOptionsQuery.query.data?.data.find((w) => w.id === weekId)?.weekNo;
   const prefix = weekNo && dayIndex ? `w${weekNo}d${dayIndex}` : null;
@@ -456,16 +673,17 @@ const LessonForm = ({
     ];
     for (const [field, standard] of rules) {
       const cur = form.getFieldValue(field) as string | undefined;
-      if (!cur || RULE_SHAPED.test(cur)) form.setFieldValue(field, standard);
+      if (!cur || isRuleShaped(cur))
+        form.setFieldValue(field, ruleFileUrl(prefix, standard));
     }
   }, [prefix, form]);
 
   const fillFileNames = () => {
     if (!prefix) return;
     form.setFieldsValue({
-      thumbnailFile: `${prefix}.png`,
-      lessonPdfFile: `${prefix}_lesson.pdf`,
-      guidePdfFile: `${prefix}_guide.pdf`,
+      thumbnailFile: ruleFileUrl(prefix, `${prefix}.png`),
+      lessonPdfFile: ruleFileUrl(prefix, `${prefix}_lesson.pdf`),
+      guidePdfFile: ruleFileUrl(prefix, `${prefix}_guide.pdf`),
     });
   };
 
@@ -565,42 +783,37 @@ const LessonForm = ({
         }
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-          파일명만 저장합니다. 실제 파일은{" "}
-          <Typography.Text code>lessons/{prefix ?? "w?d?"}/</Typography.Text> 폴더에
-          업로드되어 있어야 합니다.
+          점선 영역에 파일을 끌어다 놓으면{" "}
+          <Typography.Text code>lessons/{prefix ?? "w?d?"}/</Typography.Text> 폴더로
+          바로 업로드됩니다.
         </Typography.Paragraph>
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="썸네일" name="thumbnailFile">
-              <Input placeholder={prefix ? `${prefix}.png` : "w1d1.png"} allowClear />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item label="수업자료 PDF (다운로드)" name="lessonPdfFile">
-              <Input
-                placeholder={prefix ? `${prefix}_lesson.pdf` : "w1d1_lesson.pdf"}
-                allowClear
-              />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item label="지도안 PDF (다운로드)" name="guidePdfFile">
-              <Input
-                placeholder={prefix ? `${prefix}_guide.pdf` : "w1d1_guide.pdf"}
-                allowClear
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-        {thumbnailFile && (
-          <Image
-            src={lessonFileUrl(thumbnailFile)}
-            alt="썸네일 미리보기"
-            height={96}
-            style={{ borderRadius: 8, objectFit: "cover" }}
-            fallback="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' fill='%23f0f0f0'/><text x='48' y='52' text-anchor='middle' font-size='11' fill='%23999'>파일 없음</text></svg>"
-          />
-        )}
+        <FileSlot
+          form={form}
+          name="thumbnailFile"
+          label="썸네일"
+          kind="image"
+          prefix={prefix}
+          standardBase={prefix}
+          placeholder={ruleFileUrl(prefix ?? "w1d1", `${prefix ?? "w1d1"}.png`)}
+        />
+        <FileSlot
+          form={form}
+          name="lessonPdfFile"
+          label="수업자료 PDF (다운로드)"
+          kind="pdf"
+          prefix={prefix}
+          standardBase={prefix ? `${prefix}_lesson` : null}
+          placeholder={ruleFileUrl(prefix ?? "w1d1", `${prefix ?? "w1d1"}_lesson.pdf`)}
+        />
+        <FileSlot
+          form={form}
+          name="guidePdfFile"
+          label="지도안 PDF (다운로드)"
+          kind="pdf"
+          prefix={prefix}
+          standardBase={prefix ? `${prefix}_guide` : null}
+          placeholder={ruleFileUrl(prefix ?? "w1d1", `${prefix ?? "w1d1"}_guide.pdf`)}
+        />
       </Card>
 
       <Card
@@ -619,7 +832,7 @@ const LessonForm = ({
           <FlowStepRow label="도입" namePath={["flow", "intro"]} />
           <Form.List name={["flow", "activities"]}>
             {(fields, { add, remove }) => (
-              <>
+              <Space direction="vertical" size={8} style={{ width: "100%" }}>
                 {fields.map((field, i) => (
                   <FlowStepRow
                     key={field.key}
@@ -630,16 +843,22 @@ const LessonForm = ({
                   />
                 ))}
                 {fields.length < 4 && (
-                  <Button
-                    type="dashed"
-                    block
-                    icon={<PlusOutlined />}
-                    onClick={() => add({ title: "", durationMin: 15 })}
-                  >
-                    활동 추가 ({fields.length}/4)
-                  </Button>
+                  <Row gutter={8}>
+                    <Col flex="auto">
+                      <Button
+                        type="dashed"
+                        block
+                        icon={<PlusOutlined />}
+                        onClick={() => add({ title: "", durationMin: 15 })}
+                        style={{ background: "#f3f3f9" }}
+                      >
+                        활동 추가 ({fields.length}/4)
+                      </Button>
+                    </Col>
+                    <Col flex="32px" />
+                  </Row>
                 )}
-              </>
+              </Space>
             )}
           </Form.List>
           <FlowStepRow label="마무리" namePath={["flow", "wrapup"]} />
@@ -678,50 +897,48 @@ const LessonForm = ({
                   </Col>
                 </Row>
               ))}
-              <Button
-                type="dashed"
-                block
-                icon={<PlusOutlined />}
-                onClick={() => add({ name: "", quantity: "" })}
-              >
-                준비물 추가
-              </Button>
+              <Row gutter={8}>
+                <Col flex="auto">
+                  <Button
+                    type="dashed"
+                    block
+                    icon={<PlusOutlined />}
+                    onClick={() => add({ name: "", quantity: "" })}
+                    style={{ background: "#f3f3f9" }}
+                  >
+                    준비물 추가
+                  </Button>
+                </Col>
+                <Col flex="32px" />
+              </Row>
             </Space>
           )}
         </Form.List>
       </Card>
 
-      <Card
-        title="미디어 (웹 재생 큐)"
-        size="small"
-        style={{ marginBottom: 8 }}
-      >
+      <Card title="미디어 재생목록" size="small" style={{ marginBottom: 8 }}>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-          영상·음악이 들어간 슬라이드만 추가합니다. 유튜브는 링크, 음악·영상 파일은
-          파일명(예: {prefix ?? "w1d3"}_audio1.mp3)을 입력하세요.
+          이미지·유튜브·음악을 순서대로 섞어 구성합니다. 이미지는 표시 시간(초) 후 자동으로
+          넘어가고, 유튜브·음악은 강사가 재생 후 직접 넘깁니다. 값은 반드시{" "}
+          <Typography.Text code>https://</Typography.Text> 로 시작하는 전체 URL이어야
+          합니다.
         </Typography.Paragraph>
         <Form.List name="media">
-          {(fields, { add, remove }) => (
+          {(fields, { add, remove, move }) => (
             <Space direction="vertical" size={8} style={{ width: "100%" }}>
-              {fields.map((field) => (
+              {fields.map((field, i) => (
                 <Row key={field.key} gutter={8} align="middle" wrap={false}>
-                  <Col flex="130px">
-                    <Form.Item name={[field.name, "slideNo"]} noStyle>
-                      <InputNumber
-                        min={1}
-                        addonBefore="슬라이드"
-                        style={{ width: 130 }}
-                      />
-                    </Form.Item>
+                  <Col flex="36px">
+                    <Tag style={{ width: 32, textAlign: "center" }}>{i + 1}</Tag>
                   </Col>
-                  <Col flex="120px">
-                    <Form.Item name={[field.name, "kind"]} noStyle>
+                  <Col flex="118px">
+                    <Form.Item name={[field.name, "type"]} noStyle>
                       <Select
-                        style={{ width: 120 }}
+                        style={{ width: 110 }}
                         options={[
+                          { label: "이미지", value: "image" },
                           { label: "유튜브", value: "youtube" },
-                          { label: "음악", value: "audio" },
-                          { label: "영상파일", value: "video" },
+                          { label: "음악", value: "music" },
                         ]}
                       />
                     </Form.Item>
@@ -730,52 +947,102 @@ const LessonForm = ({
                     <Form.Item
                       noStyle
                       shouldUpdate={(prev, cur) =>
-                        prev.media?.[field.name]?.kind !== cur.media?.[field.name]?.kind
+                        prev.media?.[field.name]?.type !== cur.media?.[field.name]?.type
                       }
                     >
                       {({ getFieldValue }) => {
-                        const kind = getFieldValue(["media", field.name, "kind"]);
+                        const type = getFieldValue(["media", field.name, "type"]);
+                        const base = `https://api.bktk.kr/api/files/lessons/${prefix ?? "w1d1"}`;
+                        const placeholder =
+                          type === "youtube"
+                            ? "https://www.youtube.com/watch?v=..."
+                            : type === "music"
+                              ? `${base}/${prefix ?? "w1d1"}_audio1.mp3`
+                              : `${base}/${prefix ?? "w1d1"}_slide01.png`;
                         return (
                           <Form.Item
-                            name={[field.name, "source"]}
+                            name={[field.name, "value"]}
                             noStyle
-                            rules={
-                              kind === "youtube"
-                                ? [{ type: "url", message: "유튜브 링크 형식이 아닙니다" }]
-                                : []
-                            }
+                            rules={[
+                              {
+                                pattern: /^https:\/\//,
+                                message: "https:// 로 시작하는 전체 URL을 입력하세요",
+                              },
+                            ]}
                           >
-                            <Input
-                              placeholder={
-                                kind === "youtube"
-                                  ? "https://www.youtube.com/watch?v=..."
-                                  : `${prefix ?? "w1d3"}_audio1.mp3`
-                              }
-                              allowClear
+                            <Input placeholder={placeholder} allowClear />
+                          </Form.Item>
+                        );
+                      }}
+                    </Form.Item>
+                  </Col>
+                  <Col flex="128px">
+                    <Form.Item
+                      noStyle
+                      shouldUpdate={(prev, cur) =>
+                        prev.media?.[field.name]?.type !== cur.media?.[field.name]?.type
+                      }
+                    >
+                      {({ getFieldValue }) => {
+                        const type = getFieldValue(["media", field.name, "type"]);
+                        return (
+                          <Form.Item name={[field.name, "duration"]} noStyle>
+                            <InputNumber
+                              min={1}
+                              addonAfter="초"
+                              style={{ width: 120 }}
+                              disabled={type !== "image"}
+                              placeholder={type === "image" ? "5" : "수동"}
                             />
                           </Form.Item>
                         );
                       }}
                     </Form.Item>
                   </Col>
-                  <Col flex="32px">
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(field.name)}
-                    />
+                  <Col flex="96px">
+                    <Space size={0}>
+                      <Button
+                        type="text"
+                        size="small"
+                        disabled={i === 0}
+                        onClick={() => move(i, i - 1)}
+                        title="위로"
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        type="text"
+                        size="small"
+                        disabled={i === fields.length - 1}
+                        onClick={() => move(i, i + 1)}
+                        title="아래로"
+                      >
+                        ↓
+                      </Button>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => remove(field.name)}
+                      />
+                    </Space>
                   </Col>
                 </Row>
               ))}
-              <Button
-                type="dashed"
-                block
-                icon={<PlusOutlined />}
-                onClick={() => add({ slideNo: 1, kind: "youtube", source: "" })}
-              >
-                미디어 추가
-              </Button>
+              <Row gutter={8}>
+                <Col flex="auto">
+                  <Button
+                    type="dashed"
+                    block
+                    icon={<PlusOutlined />}
+                    onClick={() => add({ type: "image", value: "", duration: 5 })}
+                    style={{ background: "#f3f3f9" }}
+                  >
+                    항목 추가
+                  </Button>
+                </Col>
+                <Col flex="32px" />
+              </Row>
             </Space>
           )}
         </Form.List>
