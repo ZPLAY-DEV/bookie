@@ -82,6 +82,8 @@ pnpm dev:web          # http://localhost:5173
 - DB를 초기 상태로 리셋: `supabase db reset` 후 drizzle 마이그레이션 재적용
 - 스택 정지: `supabase stop` (데이터는 Docker 볼륨에 보존됨. 완전 초기화는 `supabase stop --no-backup`)
 - DB GUI: Studio(http://127.0.0.1:54323) 또는 아무 Postgres 클라이언트로 54322 접속
+- 사용자(GoTrue) 관리 UI: Studio > **Authentication** — 계정 생성/비밀번호 재설정/삭제. GoTrue 자체 UI는 없고 Studio가 그 역할. 정책(비밀번호 길이 등)은 `supabase/config.toml`이 소스라 Studio에서 바꿔도 재시작 시 되돌아간다
+- 인증 메일(가입 확인/재설정) 확인: Mailpit(http://127.0.0.1:54324) — 로컬 GoTrue가 보내는 메일이 전부 여기로 캡처된다
 
 ## Cloudflare 로컬 테크 스택 (wrangler dev)
 
