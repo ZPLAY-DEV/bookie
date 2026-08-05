@@ -1,13 +1,23 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { FileDownloadIcon, File01Icon, PlayIcon } from '@hugeicons/core-free-icons'
 
-import { Button } from '@/components/ui/button'
-import { mediaUrl } from '@/lib/api'
-import { cn } from '@/lib/utils'
-import { lessonDetailQuery, type Lesson, type LessonDetail } from '@/lib/queries'
-import { WEEKDAY_LABELS } from '@/lib/lesson-meta'
+import { TextAnimate } from '@/components/magicui/text-animate'
+import { lessonFileUrl } from '@/lib/api'
+import { Link } from '@tanstack/react-router'
+
+import type { Lesson } from '@/lib/queries'
+import { CATEGORY_COLORS, CATEGORY_GRADIENTS, WEEKDAY_LABELS } from '@/lib/lesson-meta'
+
+// 수업 흐름의 단계 뱃지 (도입/활동/마무리)
+function StageBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex h-6 w-13 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-xs font-bold tracking-widest text-sidebar-primary-foreground">
+      {label}
+    </span>
+  )
+}
+
+const ACTIVITY_NUMBERS = ['①', '②', '③', '④']
 
 export function LessonHero({
   lesson,
@@ -16,29 +26,41 @@ export function LessonHero({
   lesson: Lesson
   weekSubtitle: string | null
 }) {
-  const { data: detail } = useQuery(lessonDetailQuery(lesson.id))
-  const guide = detail?.materials.find((m) => m.kind === 'guide')
-  const resource = detail?.materials.find((m) => m.kind === 'resource')
+  const flow = lesson.flow
+  const [gradientFrom, gradientTo] =
+    CATEGORY_GRADIENTS[lesson.category] ?? CATEGORY_GRADIENTS['책놀이']
 
   return (
     <section className="flex gap-8 rounded-3xl border bg-card p-4 shadow-sm">
-      {lesson.imageUrl && (
+      {lesson.thumbnailFile && (
         <img
-          src={mediaUrl(lesson.imageUrl)}
+          src={lessonFileUrl(lesson.thumbnailFile)}
           alt=""
-          className="w-[37%] shrink-0 self-stretch rounded-2xl object-cover"
+          className="aspect-square w-[37%] shrink-0 rounded-2xl object-cover"
         />
       )}
       <div className="flex flex-1 flex-col py-2 pr-6">
         <div className="flex items-center gap-5">
-          <span className="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-accent-foreground">
-            {WEEKDAY_LABELS[lesson.weekday - 1]}요일 {lesson.category}
+          <span
+            className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
+            style={{ backgroundColor: CATEGORY_COLORS[lesson.category] ?? '#fbb93c' }}
+          >
+            {WEEKDAY_LABELS[lesson.dayIndex - 1]}요일 {lesson.category}
           </span>
           {weekSubtitle && (
             <span className="text-[15px] font-bold text-heading">{weekSubtitle}</span>
           )}
         </div>
-        <h2 className="mt-3.5 text-[32px] font-extrabold text-heading">{lesson.title}</h2>
+        {/* 요일 전환 때마다(key) 단어 단위 slide-up 애니메이션으로 등장 */}
+        <TextAnimate
+          key={lesson.id}
+          as="h2"
+          animation="slideUp"
+          by="word"
+          className="mt-3.5 text-[32px] font-extrabold text-heading"
+        >
+          {lesson.title}
+        </TextAnimate>
         {lesson.description && (
           <p className="mt-2 text-[15px] leading-relaxed">{lesson.description}</p>
         )}
@@ -46,44 +68,80 @@ export function LessonHero({
         <div className="mt-6 grid flex-1 grid-cols-2">
           <div className="pr-9">
             <h3 className="text-[15px] font-bold text-heading">
-              수업 흐름({lesson.durationMin ?? 40}분)
+              수업 흐름 {lesson.durationMin ?? 80}분
             </h3>
-            <ol className="mt-4 space-y-3">
-              {detail?.steps.map((step, i) => (
-                <li key={step.id} className="flex items-center gap-2.5 text-sm">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-[11px] font-bold text-sidebar-primary-foreground">
-                    {i + 1}
+            <ol className="mt-4 space-y-2.5">
+              {flow?.intro && (
+                <li className="flex items-center gap-2.5 text-sm">
+                  <StageBadge label="도입" />
+                  <span className="flex-1">{flow.intro.title}</span>
+                  <span className="text-muted-foreground">{flow.intro.durationMin}분</span>
+                </li>
+              )}
+              {flow?.activities.map((step, i) => (
+                <li key={i} className="flex items-center gap-2.5 text-sm">
+                  {i === 0 ? <StageBadge label="활동" /> : <span className="w-13 shrink-0" />}
+                  <span className="flex-1">
+                    {ACTIVITY_NUMBERS[i] ?? `${i + 1}.`} {step.title}
                   </span>
-                  <span className="flex-1">{step.title}</span>
                   <span className="text-muted-foreground">{step.durationMin}분</span>
                 </li>
               ))}
+              {flow?.wrapup && (
+                <li className="flex items-center gap-2.5 text-sm">
+                  <StageBadge label="마무리" />
+                  <span className="flex-1">{flow.wrapup.title}</span>
+                  <span className="text-muted-foreground">{flow.wrapup.durationMin}분</span>
+                </li>
+              )}
             </ol>
           </div>
           <div className="border-l pl-9">
             <h3 className="text-[15px] font-bold text-heading">수업 전 준비</h3>
-            {detail && <PrepList key={lesson.id} preps={detail.preps} />}
+            <ul className="mt-4 space-y-3">
+              {lesson.preps.map((prep, i) => (
+                <li key={i} className="flex items-center gap-2.5 text-sm">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-[11px] font-bold text-sidebar-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1">{prep.name}</span>
+                  <span className="text-muted-foreground">{prep.quantity}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        <div className="mt-6 flex items-center justify-between">
-          <Button className="h-13 gap-2.5 rounded-full px-9 text-lg font-bold shadow-lg shadow-primary/30 hover:bg-primary/90">
-            <HugeiconsIcon icon={PlayIcon} className="size-5" fill="currentColor" />
-            수업 시작
-          </Button>
+        <div className="mt-auto flex items-center justify-between pt-6">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/play/$lessonId"
+              params={{ lessonId: String(lesson.id) }}
+              className="flex h-13 items-center gap-2.5 rounded-full px-9 text-lg font-bold text-white transition hover:brightness-105 active:brightness-95"
+              // 요일(과목) 색을 따라가는 입체감 그라데이션
+              style={{
+                background: `linear-gradient(to bottom, ${gradientFrom}, ${gradientTo})`,
+                boxShadow: `0 8px 20px ${gradientTo}55`,
+              }}
+            >
+              <HugeiconsIcon icon={PlayIcon} className="size-5" fill="currentColor" />
+              수업 시작
+            </Link>
+            <img src="/images/book.png" alt="" className="size-16" />
+          </div>
           <div className="flex items-center gap-7">
-            {guide && (
+            {lesson.guidePdfFile && (
               <a
-                href={mediaUrl(guide.storagePath, guide.fileName)}
+                href={lessonFileUrl(lesson.guidePdfFile, lesson.guidePdfFile)}
                 className="flex items-center gap-1.5 text-sm font-semibold text-heading underline underline-offset-3"
               >
                 <HugeiconsIcon icon={FileDownloadIcon} className="size-4.5" />
                 지도안 다운받기
               </a>
             )}
-            {resource && (
+            {lesson.lessonPdfFile && (
               <a
-                href={mediaUrl(resource.storagePath, resource.fileName)}
+                href={lessonFileUrl(lesson.lessonPdfFile, lesson.lessonPdfFile)}
                 className="flex items-center gap-1.5 text-sm font-semibold text-heading underline underline-offset-3"
               >
                 <HugeiconsIcon icon={File01Icon} className="size-4.5" />
@@ -94,51 +152,5 @@ export function LessonHero({
         </div>
       </div>
     </section>
-  )
-}
-
-// 준비물 체크리스트 — 체크하면 준비 완료(취소선) 표시
-function PrepList({ preps }: { preps: LessonDetail['preps'] }) {
-  const [checked, setChecked] = useState<Set<number>>(
-    () => new Set(preps.length > 0 ? [preps[0].id] : []),
-  )
-
-  function toggle(id: number) {
-    setChecked((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  return (
-    <ul className="mt-4 space-y-3">
-      {preps.map((prep) => {
-        const isChecked = checked.has(prep.id)
-        return (
-          <li key={prep.id}>
-            <button
-              type="button"
-              onClick={() => toggle(prep.id)}
-              className="flex w-full items-center gap-2.5 text-left text-sm"
-            >
-              <span
-                className={cn(
-                  'flex size-4.5 shrink-0 items-center justify-center rounded-full border-2',
-                  isChecked ? 'border-sidebar-primary' : 'border-muted-foreground/50',
-                )}
-              >
-                {isChecked && <span className="size-2 rounded-full bg-sidebar-primary" />}
-              </span>
-              <span className={cn('flex-1', isChecked && 'line-through')}>
-                {prep.name}
-              </span>
-              <span className="text-muted-foreground">{prep.quantity}</span>
-            </button>
-          </li>
-        )
-      })}
-    </ul>
   )
 }

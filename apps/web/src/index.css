@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/figtree';
-@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+@import '@kfonts/line-seed-sans-kr/index.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -13,41 +13,41 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --background: #f1f0f5;
-  --foreground: #56546e;
+  --background: #fafafa;
+  --foreground: #6c6ba3;
   --card: #ffffff;
   --card-foreground: #33315e;
   --popover: #ffffff;
   --popover-foreground: #33315e;
-  --primary: #7c3aed;
+  --primary: #f28c2b;
   --primary-foreground: #ffffff;
-  --secondary: #eceaf3;
+  --secondary: #e8e8f3;
   --secondary-foreground: #4c4a6d;
-  --muted: #f3f2f8;
-  --muted-foreground: #8b89a0;
-  --accent: #ec4899;
+  --muted: #f4f4f8;
+  --muted-foreground: #6b6ba3;
+  --accent: #fbb93c;
   --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e5e4ec;
-  --input: #e5e4ec;
-  --ring: #a78bfa;
-  --chart-1: #4f7df9;
-  --chart-2: #34c07c;
-  --chart-3: #f5b02c;
-  --chart-4: #f97316;
-  --chart-5: #ec4899;
+  --border: #e9e8f1;
+  --input: #e9e8f1;
+  --ring: #f8c98a;
+  --chart-1: #fbb93c;
+  --chart-2: #bc52cb;
+  --chart-3: #f3505c;
+  --chart-4: #2dbcb6;
+  --chart-5: #f2709f;
   --radius: 0.75rem;
-  --sidebar: #f6f5f9;
+  --sidebar: #f3f3f9;
   --sidebar-foreground: #4c4a6d;
-  --sidebar-primary: #443a99;
+  --sidebar-primary: #2e2982;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eceaf3;
+  --sidebar-accent: #e8e8f2;
   --sidebar-accent-foreground: #4c4a6d;
-  --sidebar-border: #e5e4ec;
-  --sidebar-ring: #a78bfa;
+  --sidebar-border: #e9e8f1;
+  --sidebar-ring: #f8c98a;
 
   /* 짙은 남보라 헤딩 색 */
-  --heading: #33315e;
+  --heading: #2e2982;
 }
 
 body {
@@ -55,7 +55,7 @@ body {
 }
 
 @theme inline {
-  --font-sans: 'Pretendard Variable', 'Figtree Variable', sans-serif;
+  --font-sans: 'LINE Seed Sans KR', 'Figtree Variable', sans-serif;
   --font-heading: var(--font-sans);
   --color-heading: var(--heading);
   --color-sidebar-ring: var(--sidebar-ring);

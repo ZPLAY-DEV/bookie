@@ -1,0 +1,20 @@
+{
+  "$schema": "../api/node_modules/wrangler/config-schema.json",
+  // web 정적 배포 — Workers Static Assets (SPA 폴백 포함)
+  "name": "web",
+  "compatibility_date": "2026-08-03",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    {
+      "pattern": "bktk.kr",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.bktk.kr",
+      "custom_domain": true
+    }
+  ]
+}
