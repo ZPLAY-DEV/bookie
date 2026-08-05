@@ -31,9 +31,9 @@ export function LessonHero({
 
   return (
     <section className="flex gap-8 rounded-3xl border bg-card p-4 shadow-sm">
-      {lesson.thumbnailFile && (
+      {lesson.image && (
         <img
-          src={lesson.thumbnailFile}
+          src={lesson.image}
           alt=""
           className="aspect-square w-[37%] shrink-0 rounded-2xl object-cover"
         />
@@ -129,18 +129,18 @@ export function LessonHero({
             <img src="/images/book.png" alt="" className="size-16" />
           </div>
           <div className="flex items-center gap-7">
-            {lesson.guidePdfFile && (
+            {lesson.guideDownload && (
               <a
-                href={lesson.guidePdfFile}
+                href={lesson.guideDownload}
                 className="flex items-center gap-1.5 text-sm font-semibold text-heading underline underline-offset-3"
               >
                 <HugeiconsIcon icon={FileDownloadIcon} className="size-4.5" />
                 지도안 다운받기
               </a>
             )}
-            {lesson.lessonPdfFile && (
+            {lesson.lessonDownload && (
               <a
-                href={lesson.lessonPdfFile}
+                href={lesson.lessonDownload}
                 className="flex items-center gap-1.5 text-sm font-semibold text-heading underline underline-offset-3"
               >
                 <HugeiconsIcon icon={File01Icon} className="size-4.5" />

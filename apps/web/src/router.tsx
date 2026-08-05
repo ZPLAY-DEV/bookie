@@ -56,6 +56,11 @@ const playRoute = createRoute({
 const weekRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/weeks/$weekNo',
+  // ?day=1~5 — 선택한 요일을 URL에 실어 뒤로가기 시에도 유지한다
+  validateSearch: (search: Record<string, unknown>): { day?: number } => {
+    const n = Number(search.day)
+    return Number.isInteger(n) && n >= 1 && n <= 5 ? { day: n } : {}
+  },
   beforeLoad: requireSession,
   component: WeekPage,
 })

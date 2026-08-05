@@ -25,9 +25,9 @@ const lessonBodySchema = z.object({
   title: z.string().min(1),
   description: z.string().nullish(),
   durationMin: z.number().int().positive().nullish(),
-  thumbnailFile: z.string().url().startsWith('https://').nullish(),
-  lessonPdfFile: z.string().url().startsWith('https://').nullish(),
-  guidePdfFile: z.string().url().startsWith('https://').nullish(),
+  image: z.string().url().startsWith('https://').nullish(),
+  lessonDownload: z.string().url().startsWith('https://').nullish(),
+  guideDownload: z.string().url().startsWith('https://').nullish(),
   slideCount: z.number().int().min(0).nullish(),
   // 수업단계: 도입/마무리는 없을 수 있고 활동은 최대 4개 (입력 템플릿 규칙)
   flow: z
@@ -38,15 +38,15 @@ const lessonBodySchema = z.object({
     })
     .nullish(),
   preps: z.array(z.object({ name: z.string().min(1), quantity: z.string() })).optional(),
-  // 재생목록: 이미지(duration=초)·유튜브·음악(duration=null)을 순서대로 혼합
+  // 재생목록: 슬라이드·유튜브·음악·영상을 순서대로 혼합
+  // (전환 간격은 저장하지 않는다 — 플레이어에서 사용자가 조절)
   media: z
     .array(
       z.object({
         index: z.number().int().positive(),
-        type: z.enum(['image', 'youtube', 'music']),
-        // 이미지·음악·유튜브 모두 https:// 전체 URL만 허용
+        type: z.enum(['image', 'youtube', 'music', 'video']),
+        // 모든 값은 https:// 전체 URL만 허용
         value: z.string().url().startsWith('https://'),
-        duration: z.number().int().positive().nullable(),
       }),
     )
     .optional(),

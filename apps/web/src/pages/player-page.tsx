@@ -13,21 +13,100 @@ import { Button } from '@/components/ui/button'
 import { lessonQuery } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 
-// 유튜브 링크 → 임베드 URL (watch?v= / youtu.be / shorts 지원)
-function youtubeEmbedUrl(link: string): string | null {
+// 유튜브 링크 → 영상 ID (watch?v= / youtu.be / shorts 지원)
+function youtubeId(link: string): string | null {
   try {
     const url = new URL(link)
-    const id =
+    return (
       url.searchParams.get('v') ??
       (url.hostname === 'youtu.be'
         ? url.pathname.slice(1)
         : url.pathname.startsWith('/shorts/')
           ? url.pathname.split('/')[2]
           : null)
-    return id ? `https://www.youtube.com/embed/${id}` : null
+    )
   } catch {
     return null
   }
+}
+
+/* ---- YouTube IFrame Player API — 영상 종료(ENDED) 감지용 ---- */
+
+type YTPlayer = { destroy: () => void }
+type YTNamespace = {
+  Player: new (
+    el: HTMLElement,
+    opts: {
+      videoId: string
+      playerVars?: Record<string, number>
+      events?: { onStateChange?: (e: { data: number }) => void }
+    },
+  ) => YTPlayer
+  PlayerState: { ENDED: number }
+}
+
+declare global {
+  interface Window {
+    YT?: YTNamespace
+    onYouTubeIframeAPIReady?: () => void
+  }
+}
+
+let ytApiPromise: Promise<YTNamespace> | null = null
+function loadYouTubeAPI(): Promise<YTNamespace> {
+  if (ytApiPromise) return ytApiPromise
+  ytApiPromise = new Promise((resolve) => {
+    if (window.YT?.Player) return resolve(window.YT)
+    window.onYouTubeIframeAPIReady = () => resolve(window.YT as YTNamespace)
+    const script = document.createElement('script')
+    script.src = 'https://www.youtube.com/iframe_api'
+    document.head.appendChild(script)
+  })
+  return ytApiPromise
+}
+
+// 유튜브 스텝 — 자동 재생하고, 영상이 끝나거나(ENDED) '유튜브 닫기'를 누르면 다음으로
+function YoutubeStep({ videoId, onDone }: { videoId: string; onDone: () => void }) {
+  const holderRef = useRef<HTMLDivElement | null>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
+
+  useEffect(() => {
+    let player: YTPlayer | null = null
+    let cancelled = false
+    loadYouTubeAPI().then((yt) => {
+      if (cancelled || !holderRef.current) return
+      player = new yt.Player(holderRef.current, {
+        videoId,
+        playerVars: { autoplay: 1, rel: 0 },
+        events: {
+          onStateChange: (e) => {
+            if (e.data === yt.PlayerState.ENDED) onDoneRef.current()
+          },
+        },
+      })
+    })
+    return () => {
+      cancelled = true
+      player?.destroy()
+    }
+  }, [videoId])
+
+  return (
+    <div className="relative flex size-full items-center justify-center bg-heading/95">
+      {/* YT.Player가 이 div를 iframe으로 치환한다 */}
+      <div className="aspect-video w-[86%] overflow-hidden rounded-xl shadow-2xl [&>iframe]:size-full">
+        <div ref={holderRef} className="size-full" />
+      </div>
+      <button
+        type="button"
+        onClick={() => onDoneRef.current()}
+        className="absolute top-5 right-5 cursor-pointer rounded-full bg-black/50 px-4 py-2 text-sm font-bold text-white transition hover:bg-black/70"
+      >
+        ✕ 유튜브 닫기
+      </button>
+    </div>
+  )
 }
 
 function formatElapsed(seconds: number) {
@@ -44,18 +123,23 @@ export function PlayerPage() {
   const { data: lesson } = useQuery(lessonQuery(Number(lessonId)))
 
   const [slideIdx, setSlideIdx] = useState(() => Math.max((start ?? 1) - 1, 0))
-  // 수업 이탈 확인 팝업 — '수업 마치기'에서만 사유를 묻고 이동
+  // 야옹이 메뉴 — '수업 마치기'에서 열리고 일시정지/나가기/재개를 고른다
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  // 잠깐 멈춤 — 슬라이드 자동 진행을 멈춘다 (화살표/타임라인 수동 이동은 그대로)
+  const [paused, setPaused] = useState(false)
+  // 슬라이드 전환 간격(초) — 팝업에서 조정하면 모든 슬라이드에 일괄 적용
+  const [intervalSec, setIntervalSec] = useState(5)
+  const [showInterval, setShowInterval] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [audioPlaying, setAudioPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // 재생목록: media가 있으면 그것이 곧 슬라이드쇼. 없으면 slideCount 이미지 폴백.
   // 폴백 슬라이드 URL은 썸네일 full URL(…/w1d1/w1d1.png)에서 폴더/접두어를 유도한다.
-  const thumbUrl = lesson?.thumbnailFile ?? null
+  const thumbUrl = lesson?.image ?? null
   const folderUrl = thumbUrl?.slice(0, thumbUrl.lastIndexOf('/')) ?? null
   const prefix = thumbUrl?.split('/').pop()?.split('.')[0] ?? null
-  const playlist: { type: 'image' | 'youtube' | 'music'; value: string; duration: number | null }[] =
+  const playlist: { type: 'image' | 'youtube' | 'music' | 'video'; value: string }[] =
     lesson == null
       ? []
       : lesson.media.length > 0
@@ -66,7 +150,6 @@ export function PlayerPage() {
               folderUrl && prefix
                 ? `${folderUrl}/${prefix}_slide${String(i + 1).padStart(2, '0')}.png`
                 : '',
-            duration: null,
           }))
   const total = playlist.length
   const current = playlist[slideIdx]
@@ -96,18 +179,21 @@ export function PlayerPage() {
     setAudioPlaying(false)
   }, [slideIdx])
 
-  // 이미지 항목은 duration(초) 후 자동으로 다음 항목으로
+  // 이미지 항목은 전환 간격(초) 후 자동으로 다음 항목으로 (잠깐 멈춤 중엔 정지)
   useEffect(() => {
-    if (current?.type !== 'image' || current.duration == null || !canNext) return
+    if (paused || current?.type !== 'image' || !canNext) return
     const t = setTimeout(
       () => setSlideIdx((i) => Math.min(i + 1, total - 1)),
-      current.duration * 1000,
+      intervalSec * 1000,
     )
     return () => clearTimeout(t)
-  }, [slideIdx, current?.type, current?.duration, canNext, total])
+  }, [slideIdx, current?.type, canNext, total, paused, intervalSec])
 
-  const embedUrl = current?.type === 'youtube' ? youtubeEmbedUrl(current.value) : null
+  const videoId = current?.type === 'youtube' ? youtubeId(current.value) : null
   const audioUrl = current?.type === 'music' ? current.value : null
+
+  // 유튜브 종료/닫기 → 다음 index로 재개
+  const goNext = () => setSlideIdx((i) => Math.min(i + 1, Math.max(total - 1, 0)))
 
   function toggleAudio() {
     const el = audioRef.current
@@ -143,6 +229,13 @@ export function PlayerPage() {
             </span>
             <Button
               variant="outline"
+              onClick={() => setShowInterval(true)}
+              className="h-11 rounded-full bg-card px-6 text-[15px] font-bold text-heading"
+            >
+              {intervalSec}초 간격
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setShowExitConfirm(true)}
               className="h-11 rounded-full bg-card px-6 text-[15px] font-bold text-heading"
             >
@@ -173,14 +266,17 @@ export function PlayerPage() {
               alt={`슬라이드 ${slideIdx + 1}`}
               className="size-full object-contain"
             />
-          ) : current.type === 'youtube' && embedUrl ? (
-            // 유튜브 스텝 — 강사가 재생 후 화살표로 직접 진행
+          ) : current.type === 'youtube' && videoId ? (
+            <YoutubeStep key={slideIdx} videoId={videoId} onDone={goNext} />
+          ) : current.type === 'video' ? (
+            // 영상 스텝 — 자동 재생, 끝나면 다음 항목으로
             <div className="flex size-full items-center justify-center bg-heading/95">
-              <iframe
-                src={embedUrl}
-                title="수업 영상"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+              <video
+                key={slideIdx}
+                src={current.value}
+                autoPlay
+                controls
+                onEnded={goNext}
                 className="aspect-video w-[86%] rounded-xl shadow-2xl"
               />
             </div>
@@ -217,6 +313,11 @@ export function PlayerPage() {
               {slideIdx + 1} / {total}
             </span>
           )}
+          {paused && (
+            <span className="absolute bottom-4 left-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white">
+              ⏸ 잠깐 멈춤 — 야옹이에게 '계속 진행'을 말해주세요
+            </span>
+          )}
         </div>
 
         <button
@@ -230,10 +331,32 @@ export function PlayerPage() {
         </button>
       </main>
 
+        {total > 0 && (
+          <Timeline playlist={playlist} activeIdx={slideIdx} onSelect={setSlideIdx} />
+        )}
+
+        {showInterval && (
+          <IntervalPopup
+            initial={intervalSec}
+            onConfirm={(v) => {
+              setIntervalSec(v)
+              setShowInterval(false)
+            }}
+            onClose={() => setShowInterval(false)}
+          />
+        )}
+
         {showExitConfirm && (
           <ExitConfirm
             onClose={() => setShowExitConfirm(false)}
-            onSelect={() => router.history.back()}
+            onAction={(action) => {
+              if (action === 'exit') {
+                router.history.back()
+                return
+              }
+              setPaused(action === 'pause')
+              setShowExitConfirm(false)
+            }}
           />
         )}
 
@@ -246,19 +369,163 @@ export function PlayerPage() {
   )
 }
 
-const EXIT_REASONS = [
-  { emoji: '😫', label: '겁나 재미없음' },
-  { emoji: '🥺', label: '그만할래' },
-  { emoji: '🥱', label: '흥미를 잃음' },
-] as const
-
-// 수업 이탈 확인 — 야옹이가 이유를 묻는다. 카드 3장이 겹쳐 있다가
-// hover 시 부채꼴로 펼쳐진다 (magicui feature-card 스타일 연출)
-function ExitConfirm({
+// 하단 타임라인 — 재생목록을 슬라이드별 썸네일로 배치. 클릭하면 해당 순서로 점프.
+function Timeline({
+  playlist,
+  activeIdx,
   onSelect,
+}: {
+  playlist: { type: 'image' | 'youtube' | 'music' | 'video'; value: string }[]
+  activeIdx: number
+  onSelect: (idx: number) => void
+}) {
+  const stripRef = useRef<HTMLDivElement | null>(null)
+
+  // 활성 타일을 항상 시야 중앙 근처로
+  useEffect(() => {
+    stripRef.current
+      ?.querySelector(`[data-idx="${activeIdx}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [activeIdx])
+
+  return (
+    <footer className="px-6 pb-6">
+      <div
+        ref={stripRef}
+        className="mx-auto flex max-w-[1400px] justify-center-safe gap-2.5 overflow-x-auto pt-1 pb-1"
+      >
+        {playlist.map((item, i) => {
+          const ytId = item.type === 'youtube' ? youtubeId(item.value) : null
+          return (
+            <button
+              key={i}
+              type="button"
+              data-idx={i}
+              onClick={() => onSelect(i)}
+              title={`${i + 1}번째 슬라이드`}
+              className={cn(
+                'relative aspect-video w-24 shrink-0 cursor-pointer overflow-hidden rounded-lg border bg-muted transition',
+                i === activeIdx
+                  ? 'ring-2 ring-[#f5a031] ring-offset-1'
+                  : 'opacity-55 hover:opacity-100',
+              )}
+            >
+              {item.type === 'image' ? (
+                <img src={item.value} alt="" className="size-full object-cover" />
+              ) : item.type === 'youtube' ? (
+                <>
+                  {ytId && (
+                    <img
+                      src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-5 w-7 items-center justify-center rounded-md bg-[#f03] text-[10px] text-white">
+                      ▶
+                    </span>
+                  </span>
+                </>
+              ) : item.type === 'video' ? (
+                <span className="flex size-full items-center justify-center bg-heading/90 text-xl">
+                  🎬
+                </span>
+              ) : (
+                <span className="flex size-full items-center justify-center bg-heading/90 text-xl">
+                  🎵
+                </span>
+              )}
+              <span className="absolute bottom-0.5 left-1 text-[10px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]">
+                {i + 1}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </footer>
+  )
+}
+
+// 슬라이드 전환 간격 조정 팝업 — 초 단위 스테퍼(1~60), 확인해야 적용된다
+function IntervalPopup({
+  initial,
+  onConfirm,
   onClose,
 }: {
-  onSelect: () => void
+  initial: number
+  onConfirm: (value: number) => void
+  onClose: () => void
+}) {
+  const [value, setValue] = useState(initial)
+  return (
+    <div
+      className="absolute inset-0 z-50 flex items-center justify-center bg-heading/40 backdrop-blur-[2px]"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl border bg-card p-8 text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-xl font-extrabold text-heading">슬라이드 전환 간격</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          slideshow 전환시간 간격을 조정합니다
+        </p>
+        <div className="mt-7 flex items-center justify-center gap-6">
+          <button
+            type="button"
+            onClick={() => setValue((v) => Math.max(1, v - 1))}
+            className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-secondary text-2xl font-bold text-heading transition hover:bg-secondary/70"
+          >
+            −
+          </button>
+          <span className="w-24 text-5xl font-extrabold text-heading tabular-nums">
+            {value}
+            <span className="ml-1 text-lg font-bold">초</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setValue((v) => Math.min(60, v + 1))}
+            className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-secondary text-2xl font-bold text-heading transition hover:bg-secondary/70"
+          >
+            +
+          </button>
+        </div>
+        <div className="mt-8 flex gap-3">
+          <Button
+            onClick={() => onConfirm(value)}
+            className="h-11 flex-1 rounded-full font-bold"
+          >
+            확인
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="h-11 flex-1 rounded-full font-bold"
+          >
+            취소
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type ExitAction = 'pause' | 'exit' | 'resume'
+
+const EXIT_REASONS: { emoji: string; label: string; action: ExitAction }[] = [
+  { emoji: '✋', label: '잠깐 멈춤', action: 'pause' },
+  { emoji: '🥺', label: '그만할래', action: 'exit' },
+  { emoji: '🚗', label: '계속 진행', action: 'resume' },
+]
+
+// 야옹이 메뉴 — 잠깐 멈춤(일시정지) / 그만할래(나가기) / 다시 시작(재개).
+// 카드 3장이 겹쳐 있다가 hover 시 부채꼴로 펼쳐진다 (magicui feature-card 스타일 연출)
+function ExitConfirm({
+  onAction,
+  onClose,
+}: {
+  onAction: (action: ExitAction) => void
   onClose: () => void
 }) {
   return (
@@ -283,7 +550,7 @@ function ExitConfirm({
             </p>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            이유를 하나 골라주면 보내드릴게요 (마우스를 올려보세요)
+            원하는 걸 하나 골라주세요 (마우스를 올려보세요)
           </p>
         </div>
 
@@ -292,7 +559,7 @@ function ExitConfirm({
             <button
               key={reason.label}
               type="button"
-              onClick={onSelect}
+              onClick={() => onAction(reason.action)}
               className={cn(
                 'absolute top-0 left-1/2 flex h-40 w-52 -translate-x-1/2 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border bg-card shadow-lg transition-all duration-250 ease-out hover:!scale-105 hover:border-accent hover:shadow-xl',
                 // 기본: 살짝 어긋나게 겹친 카드 더미
@@ -316,7 +583,7 @@ function ExitConfirm({
           onClick={onClose}
           className="mt-6 cursor-pointer text-sm font-semibold text-muted-foreground underline underline-offset-3 hover:text-heading"
         >
-          아냐, 계속 수업할래
+          취소
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
-import { asc, count, desc, eq, type SQL } from 'drizzle-orm'
+import { asc, count, desc, eq, getTableColumns, type SQL } from 'drizzle-orm'
 import type { Database } from '../db'
-import { associations, schools } from '../db/schema'
+import { associations, schools, users } from '../db/schema'
 import type { ListParams } from './lesson.service'
 
 function paginate(page: number, pageSize: number) {
@@ -15,6 +15,9 @@ const schoolSortColumns = {
 } as const
 
 export type SchoolSortField = keyof typeof schoolSortColumns
+
+// 저장 가능한 학교 필드 — 스키마(insert 모델)에서 유도
+export type SchoolValues = Omit<typeof schools.$inferInsert, 'id' | 'createdAt'>
 
 export async function listSchools(
   db: Database,
@@ -39,7 +42,10 @@ export async function getSchool(db: Database, id: number) {
   return school ?? null
 }
 
-export async function createSchool(db: Database, values: { name: string }) {
+export async function createSchool(
+  db: Database,
+  values: SchoolValues,
+) {
   const [school] = await db.insert(schools).values(values).returning()
   return school
 }
@@ -47,7 +53,7 @@ export async function createSchool(db: Database, values: { name: string }) {
 export async function updateSchool(
   db: Database,
   id: number,
-  values: Partial<{ name: string }>,
+  values: Partial<SchoolValues>,
 ) {
   const [school] = await db
     .update(schools)
@@ -93,8 +99,10 @@ export async function listAssociations(
       : eq(associations.schoolId, params.schoolId)
   const [data, [{ total }]] = await Promise.all([
     db
-      .select()
+      // 연결된 강사 이름(users.name)을 함께 내려준다 — 콘솔 학교 상세의 강사 목록용
+      .select({ ...getTableColumns(associations), userName: users.name })
       .from(associations)
+      .leftJoin(users, eq(associations.userId, users.id))
       .where(where)
       .orderBy(order(associationSortColumns[params.sortField]))
       .limit(limit)

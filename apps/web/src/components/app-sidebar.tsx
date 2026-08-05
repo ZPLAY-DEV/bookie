@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { meQuery, weeksQuery } from '@/lib/queries'
@@ -46,6 +47,10 @@ export function AppSidebar({
         <img src="/images/title.png" alt="북키톡키" className="w-55 self-start" />
       </Link>
       <nav className="mt-9 flex flex-col gap-3.5">
+        {!weeks &&
+          Array.from({ length: 12 }, (_, i) => (
+            <Skeleton key={i} className="h-11 w-full rounded-xl" />
+          ))}
         {weeks?.data.map((w) => (
           <Link
             key={w.id}

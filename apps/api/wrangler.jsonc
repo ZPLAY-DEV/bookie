@@ -7,9 +7,10 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
+  // NEIS(나이스) 공공데이터 API 키 — 학교 검색용 (공개 데이터라 vars로 관리)
+  "vars": {
+    "NEIS_API_KEY": "8c9b43b18cab4614847cba6989621588"
+  },
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",

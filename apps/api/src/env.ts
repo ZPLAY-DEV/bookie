@@ -4,6 +4,7 @@ export type AppBindings = {
   DATABASE_URL: string
   SUPABASE_URL: string
   SUPABASE_JWT_SECRET: string
+  NEIS_API_KEY: string
   MEDIA: R2Bucket
 }
 

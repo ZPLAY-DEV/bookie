@@ -5,6 +5,8 @@
   "type": "module",
   "dependencies": {
     "@ant-design/icons": "^5.5.1",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@refinedev/antd": "^6.0.1",
     "@refinedev/cli": "^2.16.48",
     "@refinedev/core": "^5.0.8",
@@ -13,6 +15,7 @@
     "@refinedev/react-router": "^2.0.0",
     "@supabase/supabase-js": "^2.111.0",
     "antd": "^5.23.0",
+    "fflate": "^0.8.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.0.2"

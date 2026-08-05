@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from '@tanstack/react-router'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AppSidebar } from '@/components/app-sidebar'
 import { LessonHero } from '@/components/lesson-hero'
 import { api } from '@/lib/api'
@@ -15,8 +16,17 @@ const SCHOOL_KEY = 'bookie-school-id'
 
 export function WeekPage() {
   const { weekNo } = useParams({ from: '/weeks/$weekNo' })
+  const { day } = useSearch({ from: '/weeks/$weekNo' })
   const navigate = useNavigate()
-  const [weekday, setWeekday] = useState(5)
+  // 요일은 URL(?day=)에 실어 /play 갔다가 뒤로 와도 그대로 복원되게 한다
+  const weekday = day ?? 5
+  const setWeekday = (d: number) =>
+    navigate({
+      to: '/weeks/$weekNo',
+      params: { weekNo },
+      search: { day: d },
+      replace: true,
+    })
   const [schoolId, setSchoolId] = useState<number | null>(() => {
     const stored = localStorage.getItem(SCHOOL_KEY)
     return stored ? Number(stored) : null
@@ -50,7 +60,17 @@ export function WeekPage() {
   const featured = detail?.lessons.find((l) => l.dayIndex === weekday)
   const others = detail?.lessons.filter((l) => l.dayIndex !== weekday) ?? []
 
-  if (!me) return null
+  // 첫 로딩 — 실제 레이아웃과 같은 뼈대의 스켈레톤으로 점핑 없이 채운다
+  if (!me) {
+    return (
+      <div className="min-h-svh p-7">
+        <div className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1880px] overflow-hidden rounded-3xl border bg-sidebar shadow-sm">
+          <AppSidebar activeWeekNo={Number(weekNo)} />
+          <WeekMainSkeleton />
+        </div>
+      </div>
+    )
+  }
 
   // 사전 등록된 학교가 없으면 기본 학교(제트초등학교) 합류를 안내
   if (!approved) {
@@ -62,11 +82,17 @@ export function WeekPage() {
     return <SchoolPicker associations={me.associations} onSelect={selectSchool} />
   }
 
+  // 주차/수업 데이터가 오기 전에는 본문을 스켈레톤으로 (빈 제목 '' 노출 방지)
+  const contentLoading = !weeks || (!!week && !detail)
+
   return (
     <div className="min-h-svh p-7">
       <div className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1880px] overflow-hidden rounded-3xl border bg-sidebar shadow-sm">
         <AppSidebar activeWeekNo={Number(weekNo)} />
 
+        {contentLoading ? (
+          <WeekMainSkeleton />
+        ) : (
         <main className="flex-1 bg-card px-12 py-9">
           <header className="flex items-center justify-between">
             <div>
@@ -151,8 +177,68 @@ export function WeekPage() {
             </section>
           )}
         </main>
+        )}
       </div>
     </div>
+  )
+}
+
+// 주차 대시보드 본문과 같은 골격의 로딩 스켈레톤
+function WeekMainSkeleton() {
+  return (
+    <main className="flex-1 bg-card px-12 py-9">
+      <header className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-80" />
+          <Skeleton className="mt-2.5 h-4 w-48" />
+        </div>
+        <div className="flex items-center gap-2.5">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} className="size-11 rounded-full" />
+          ))}
+          <Skeleton className="ml-2 size-13 rounded-full" />
+        </div>
+      </header>
+      <div className="mt-7 flex gap-8 rounded-3xl border bg-card p-4 shadow-sm">
+        <Skeleton className="aspect-square w-[37%] shrink-0 rounded-2xl" />
+        <div className="flex flex-1 flex-col py-2 pr-6">
+          <Skeleton className="h-8 w-44 rounded-full" />
+          <Skeleton className="mt-4 h-9 w-3/4" />
+          <Skeleton className="mt-3 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-2/3" />
+          <div className="mt-8 grid flex-1 grid-cols-2 gap-9">
+            <div className="space-y-3">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+          </div>
+          <div className="mt-auto flex items-center justify-between pt-6">
+            <Skeleton className="h-13 w-44 rounded-full" />
+            <Skeleton className="h-5 w-72" />
+          </div>
+        </div>
+      </div>
+      <div className="mt-9">
+        <Skeleton className="h-7 w-56" />
+        <div className="mt-5 grid grid-cols-4 gap-7">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="overflow-hidden rounded-2xl border">
+              <Skeleton className="aspect-[338/194] w-full rounded-none" />
+              <div className="px-5 py-4">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="mt-2 h-4 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
   )
 }
 
@@ -242,9 +328,9 @@ function LessonCard({ lesson, onSelect }: { lesson: Lesson; onSelect: () => void
       onClick={onSelect}
       className="overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-shadow hover:shadow-md"
     >
-      {lesson.thumbnailFile && (
+      {lesson.image && (
         <img
-          src={lesson.thumbnailFile}
+          src={lesson.image}
           alt=""
           className="aspect-[338/194] w-full object-cover"
         />

@@ -27,6 +27,15 @@ export const users = pgTable('users', {
 export const schools = pgTable('schools', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: text('name').notNull(),
+  image: text('image'), // full URL. 없으면 기본 학교 이미지로 표시
+  neisCode: text('neis_code'), // 행정표준코드 (SD_SCHUL_CODE)
+  office: text('office'), // 교육청 (ATPT_OFCDC_SC_NM)
+  location: text('location'), // 시도명 (LCTN_SC_NM)
+  schoolType: text('school_type'), // 설립명 (FOND_SC_NM)
+  zip: text('zip'), // 우편번호 (ORG_RDNZC)
+  address: text('address'), // 주소 (ORG_RDNMA + ORG_RDNDA)
+  tel: text('tel'), // 전화번호 (ORG_TELNO)
+  web: text('web'), // 홈페이지 (HMPG_ADRES)
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -80,12 +89,11 @@ export type LessonFlow = {
 export type LessonPrep = { name: string; quantity: string }
 // 수업 재생목록 한 항목 — 이미지·유튜브·음악을 순서대로 섞어 구성한다.
 // value는 https:// 로 시작하는 전체 URL만 허용한다.
-// duration: image = 자동 넘김 초, youtube/music = null (사용자가 재생 후 수동 진행)
+// 전환 간격(초)은 저장하지 않는다 — 플레이어에서 사용자가 조절 (기본 5초)
 export type LessonMediaItem = {
   index: number
-  type: 'image' | 'youtube' | 'music'
+  type: 'image' | 'youtube' | 'music' | 'video'
   value: string
-  duration: number | null
 }
 
 // 일차별 수업 — 입력 템플릿의 일차정보 시트와 1:1.
@@ -96,14 +104,15 @@ export const lessons = pgTable('lessons', {
   weekId: integer('week_id')
     .notNull()
     .references(() => weeks.id),
+  weekIndex: smallint('week_index').notNull().default(1), // 주차 (weeks.week_no 비정규화 — 슬라이드 경로 w{주차}d{일차} 구성용)
   dayIndex: smallint('day_index').notNull().default(1), // 일차 1~5 = 월~금
   category: text('category').notNull(), // 책놀이 | 미술 | 음악 | 신체 | 사회정서
   title: text('title').notNull(), // 차시명
   description: text('description'), // 수업 설명
   durationMin: integer('duration_min'), // 시간(분), 예: 80
-  thumbnailFile: text('thumbnail_file'), // full URL 예: https://api.bktk.kr/api/files/lessons/w1d5/w1d5.png
-  lessonPdfFile: text('lesson_pdf_file'), // full URL (다운로드용)
-  guidePdfFile: text('guide_pdf_file'), // full URL (다운로드용)
+  image: text('image'), // full URL 예: https://cdn.bktk.kr/lessons/w1d5/w1d5.png
+  lessonDownload: text('lesson_download'), // full URL (수업자료 다운로드)
+  guideDownload: text('guide_download'), // full URL (지도안 다운로드)
   slideCount: integer('slide_count'), // 웹 재생용 슬라이드 장수 (인제스트 시 산출)
   flow: jsonb('flow').$type<LessonFlow>(), // 수업단계
   preps: jsonb('preps').$type<LessonPrep[]>().notNull().default([]), // 준비물

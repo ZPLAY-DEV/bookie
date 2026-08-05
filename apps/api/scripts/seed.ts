@@ -120,10 +120,10 @@ const WEEK1_LESSONS: LessonSeed[] = [
     ],
     // 이미지 2장 → 음악 → 이미지: 음악은 사용자가 재생 후 수동 진행
     media: [
-      { index: 1, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide01.png`, duration: 5 },
-      { index: 2, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide02.png`, duration: 5 },
-      { index: 3, type: 'music', value: `${FILES_BASE}/w1d3/w1d3_audio1.mp3`, duration: null },
-      { index: 4, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide03.png`, duration: 5 },
+      { index: 1, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide01.png` },
+      { index: 2, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide02.png` },
+      { index: 3, type: 'music', value: `${FILES_BASE}/w1d3/w1d3_audio1.mp3` },
+      { index: 4, type: 'image', value: `${FILES_BASE}/w1d3/w1d3_slide03.png` },
     ],
   },
   {
@@ -147,16 +147,15 @@ const WEEK1_LESSONS: LessonSeed[] = [
     ],
     // 이미지 → 유튜브 → 이미지 2장
     media: [
-      { index: 1, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide01.png`, duration: 5 },
+      { index: 1, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide01.png` },
       {
         index: 2,
         type: 'youtube',
         value:
           'https://www.youtube.com/watch?v=K7nRz4Ka_KM&list=RDK7nRz4Ka_KM&start_radio=1',
-        duration: null,
       },
-      { index: 3, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide02.png`, duration: 5 },
-      { index: 4, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide03.png`, duration: 5 },
+      { index: 3, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide02.png` },
+      { index: 4, type: 'image', value: `${FILES_BASE}/w1d4/w1d4_slide03.png` },
     ],
   },
   {
@@ -207,15 +206,16 @@ async function seed() {
   await db.insert(lessons).values(
     WEEK1_LESSONS.map((l) => ({
       weekId: week1.id,
+      weekIndex: 1,
       dayIndex: l.dayIndex,
       category: l.category,
       title: l.title,
       description: l.description,
       durationMin: l.durationMin,
       // 파일명 규칙: w{주차}d{일차}.png / _lesson.pdf / _guide.pdf — full URL로 저장
-      thumbnailFile: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}.png`,
-      lessonPdfFile: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_lesson.pdf`,
-      guidePdfFile: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_guide.pdf`,
+      image: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}.png`,
+      lessonDownload: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_lesson.pdf`,
+      guideDownload: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_guide.pdf`,
       flow: l.flow,
       preps: l.preps,
       media:
@@ -225,7 +225,6 @@ async function seed() {
               index: n,
               type: 'image' as const,
               value: `${FILES_BASE}/w1d${l.dayIndex}/w1d${l.dayIndex}_slide0${n}.png`,
-              duration: 5,
             })),
     })),
   )

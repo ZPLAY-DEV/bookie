@@ -88,9 +88,9 @@ export type LessonValues = {
   title: string
   description?: string | null
   durationMin?: number | null
-  thumbnailFile?: string | null
-  lessonPdfFile?: string | null
-  guidePdfFile?: string | null
+  image?: string | null
+  lessonDownload?: string | null
+  guideDownload?: string | null
   slideCount?: number | null
   flow?: LessonFlow | null
   preps?: LessonPrep[]
@@ -124,8 +124,18 @@ export async function getLessonDetail(db: Database, lessonId: number) {
   return lesson ?? null
 }
 
+// weekId가 정해지면 weekIndex(주차 번호)는 항상 서버에서 유도한다 — 경로 규칙(w{주차}d{일차})의 원천
+async function weekIndexOf(db: Database, weekId: number) {
+  const [week] = await db.select().from(weeks).where(eq(weeks.id, weekId))
+  return week?.weekNo ?? 1
+}
+
 export async function createLesson(db: Database, values: LessonValues) {
-  const [lesson] = await db.insert(lessons).values(values).returning()
+  const weekIndex = await weekIndexOf(db, values.weekId)
+  const [lesson] = await db
+    .insert(lessons)
+    .values({ ...values, weekIndex })
+    .returning()
   return lesson
 }
 
@@ -134,9 +144,11 @@ export async function updateLesson(
   id: number,
   values: Partial<LessonValues>,
 ) {
+  const weekIndex =
+    values.weekId === undefined ? undefined : await weekIndexOf(db, values.weekId)
   const [lesson] = await db
     .update(lessons)
-    .set(values)
+    .set(weekIndex === undefined ? values : { ...values, weekIndex })
     .where(eq(lessons.id, id))
     .returning()
   return lesson ?? null
