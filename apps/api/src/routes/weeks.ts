@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { createDb } from '../db'
 import type { AppEnv } from '../env'
 import { idParamSchema, isForeignKeyViolation, listQuerySchema } from '../lib/query'
-import { requireAuth } from '../middleware/auth'
+import { requireAdmin, requireAuth, requireMember } from '../middleware/auth'
 import {
   createWeek,
   deleteWeek,
@@ -22,25 +22,28 @@ const weekBodySchema = z.object({
 export const weeks = new Hono<AppEnv>()
   .get(
     '/',
+    requireAuth,
+    requireMember,
     zValidator('query', listQuerySchema(['id', 'weekNo', 'theme'], 'weekNo')),
     async (c) => {
       const db = createDb(c.env.DATABASE_URL)
       return c.json(await listWeeks(db, c.req.valid('query')))
     },
   )
-  .get('/:id{[0-9]+}', zValidator('param', idParamSchema), async (c) => {
+  .get('/:id{[0-9]+}', requireAuth, requireMember, zValidator('param', idParamSchema), async (c) => {
     const db = createDb(c.env.DATABASE_URL)
     const week = await getWeekWithLessons(db, c.req.valid('param').id)
     if (!week) return c.json({ error: 'Week not found' }, 404)
     return c.json(week)
   })
-  .post('/', requireAuth, zValidator('json', weekBodySchema), async (c) => {
+  .post('/', requireAuth, requireAdmin, zValidator('json', weekBodySchema), async (c) => {
     const db = createDb(c.env.DATABASE_URL)
     return c.json(await createWeek(db, c.req.valid('json')), 201)
   })
   .patch(
     '/:id{[0-9]+}',
     requireAuth,
+    requireAdmin,
     zValidator('param', idParamSchema),
     zValidator('json', weekBodySchema.partial()),
     async (c) => {
@@ -53,6 +56,7 @@ export const weeks = new Hono<AppEnv>()
   .delete(
     '/:id{[0-9]+}',
     requireAuth,
+    requireAdmin,
     zValidator('param', idParamSchema),
     async (c) => {
       const db = createDb(c.env.DATABASE_URL)

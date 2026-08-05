@@ -29,6 +29,34 @@
       "when": 1785755456736,
       "tag": "0003_admin-users-view",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785816683622,
+      "tag": "0004_schools-associations",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785816684047,
+      "tag": "0005_handle-new-user-trigger",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785836107290,
+      "tag": "0006_drop-content-v1",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785836128572,
+      "tag": "0007_lessons-content-v2",
+      "breakpoints": true
     }
   ]
 }

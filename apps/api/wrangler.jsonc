@@ -16,12 +16,19 @@
   //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   //   }
   // ],
+  // 프로덕션 커스텀 도메인 — zone(bktk.kr)이 같은 Cloudflare 계정에 있어야 한다
+  "routes": [
+    {
+      "pattern": "api.bktk.kr",
+      "custom_domain": true
+    }
+  ],
   // 수업 이미지·자료 저장소. 로컬(wrangler dev)에서는 Miniflare가 시뮬레이션하며
   // 데이터는 .wrangler/state/에 저장된다. 로컬 시드: pnpm r2:seed
   "r2_buckets": [
     {
       "binding": "MEDIA",
-      "bucket_name": "media"
+      "bucket_name": "bktk"
     }
   ],
   // "d1_databases": [

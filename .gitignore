@@ -5,3 +5,4 @@ dist/
 .wrangler/
 supabase/.temp/
 apps/web/.env
+*.tsbuildinfo

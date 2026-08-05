@@ -3,8 +3,8 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { createDb } from '../db'
 import type { AppEnv } from '../env'
-import { idParamSchema, isForeignKeyViolation, listQuerySchema } from '../lib/query'
-import { requireAuth } from '../middleware/auth'
+import { idParamSchema, listQuerySchema } from '../lib/query'
+import { requireAdmin, requireAuth, requireMember } from '../middleware/auth'
 import {
   createLesson,
   deleteLesson,
@@ -13,38 +13,65 @@ import {
   updateLesson,
 } from '../services/lesson.service'
 
+const flowStepSchema = z.object({
+  title: z.string().min(1),
+  durationMin: z.number().int().positive(),
+})
+
 const lessonBodySchema = z.object({
   weekId: z.number().int().positive(),
-  weekday: z.number().int().min(1).max(5),
+  dayIndex: z.number().int().min(1).max(5),
   category: z.string().min(1),
   title: z.string().min(1),
   description: z.string().nullish(),
-  imageUrl: z.string().nullish(),
   durationMin: z.number().int().positive().nullish(),
+  thumbnailFile: z.string().nullish(),
+  lessonPdfFile: z.string().nullish(),
+  guidePdfFile: z.string().nullish(),
+  slideCount: z.number().int().min(0).nullish(),
+  // 수업단계: 도입/마무리는 없을 수 있고 활동은 최대 4개 (입력 템플릿 규칙)
+  flow: z
+    .object({
+      intro: flowStepSchema.nullable(),
+      activities: z.array(flowStepSchema).max(4),
+      wrapup: flowStepSchema.nullable(),
+    })
+    .nullish(),
+  preps: z.array(z.object({ name: z.string().min(1), quantity: z.string() })).optional(),
+  media: z
+    .array(
+      z.object({
+        slideNo: z.number().int().positive(),
+        kind: z.enum(['youtube', 'audio', 'video']),
+        source: z.string().min(1),
+      }),
+    )
+    .optional(),
 })
 
-const lessonListSchema = listQuerySchema(['id', 'weekId', 'weekday'], 'weekId').extend({
+const lessonListSchema = listQuerySchema(['id', 'weekId', 'dayIndex'], 'weekId').extend({
   weekId: z.coerce.number().int().positive().optional(),
 })
 
 export const lessons = new Hono<AppEnv>()
-  .get('/', zValidator('query', lessonListSchema), async (c) => {
+  .get('/', requireAuth, requireMember, zValidator('query', lessonListSchema), async (c) => {
     const db = createDb(c.env.DATABASE_URL)
     return c.json(await listLessons(db, c.req.valid('query')))
   })
-  .get('/:id{[0-9]+}', zValidator('param', idParamSchema), async (c) => {
+  .get('/:id{[0-9]+}', requireAuth, requireMember, zValidator('param', idParamSchema), async (c) => {
     const db = createDb(c.env.DATABASE_URL)
     const lesson = await getLessonDetail(db, c.req.valid('param').id)
     if (!lesson) return c.json({ error: 'Lesson not found' }, 404)
     return c.json(lesson)
   })
-  .post('/', requireAuth, zValidator('json', lessonBodySchema), async (c) => {
+  .post('/', requireAuth, requireAdmin, zValidator('json', lessonBodySchema), async (c) => {
     const db = createDb(c.env.DATABASE_URL)
     return c.json(await createLesson(db, c.req.valid('json')), 201)
   })
   .patch(
     '/:id{[0-9]+}',
     requireAuth,
+    requireAdmin,
     zValidator('param', idParamSchema),
     zValidator('json', lessonBodySchema.partial()),
     async (c) => {
@@ -61,21 +88,12 @@ export const lessons = new Hono<AppEnv>()
   .delete(
     '/:id{[0-9]+}',
     requireAuth,
+    requireAdmin,
     zValidator('param', idParamSchema),
     async (c) => {
       const db = createDb(c.env.DATABASE_URL)
-      try {
-        const lesson = await deleteLesson(db, c.req.valid('param').id)
-        if (!lesson) return c.json({ error: 'Lesson not found' }, 404)
-        return c.json(lesson)
-      } catch (err) {
-        if (isForeignKeyViolation(err)) {
-          return c.json(
-            { error: '흐름/준비물/자료가 남아 있는 수업은 삭제할 수 없습니다' },
-            409,
-          )
-        }
-        throw err
-      }
+      const lesson = await deleteLesson(db, c.req.valid('param').id)
+      if (!lesson) return c.json({ error: 'Lesson not found' }, 404)
+      return c.json(lesson)
     },
   )

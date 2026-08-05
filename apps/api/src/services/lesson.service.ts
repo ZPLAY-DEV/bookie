@@ -1,6 +1,6 @@
 import { asc, count, desc, eq, type SQL } from 'drizzle-orm'
 import type { Database } from '../db'
-import { lessonPreps, lessons, lessonSteps, materials, weeks } from '../db/schema'
+import { lessons, weeks } from '../db/schema'
 
 export type ListParams = {
   page: number
@@ -47,7 +47,7 @@ export async function getWeekWithLessons(db: Database, id: number) {
     .select()
     .from(lessons)
     .where(eq(lessons.weekId, week.id))
-    .orderBy(asc(lessons.weekday))
+    .orderBy(asc(lessons.dayIndex))
   return { ...week, lessons: weekLessons }
 }
 
@@ -79,14 +79,22 @@ export async function deleteWeek(db: Database, id: number) {
 
 // --- lessons ---
 
+import type { LessonFlow, LessonMediaCue, LessonPrep } from '../db/schema'
+
 export type LessonValues = {
   weekId: number
-  weekday: number
+  dayIndex: number
   category: string
   title: string
   description?: string | null
-  imageUrl?: string | null
   durationMin?: number | null
+  thumbnailFile?: string | null
+  lessonPdfFile?: string | null
+  guidePdfFile?: string | null
+  slideCount?: number | null
+  flow?: LessonFlow | null
+  preps?: LessonPrep[]
+  media?: LessonMediaCue[]
 }
 
 export async function listLessons(
@@ -102,7 +110,7 @@ export async function listLessons(
       .select()
       .from(lessons)
       .where(where)
-      .orderBy(order(lessons.weekId), order(lessons.weekday))
+      .orderBy(order(lessons.weekId), order(lessons.dayIndex))
       .limit(limit)
       .offset(offset),
     db.select({ total: count() }).from(lessons).where(where),
@@ -110,19 +118,10 @@ export async function listLessons(
   return { data, total }
 }
 
+// flow/preps/media가 lessons에 내장되어 단일 행 조회로 끝난다
 export async function getLessonDetail(db: Database, lessonId: number) {
   const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId))
-  if (!lesson) return null
-  const [steps, preps, files] = await Promise.all([
-    db
-      .select()
-      .from(lessonSteps)
-      .where(eq(lessonSteps.lessonId, lessonId))
-      .orderBy(asc(lessonSteps.sortOrder)),
-    db.select().from(lessonPreps).where(eq(lessonPreps.lessonId, lessonId)),
-    db.select().from(materials).where(eq(materials.lessonId, lessonId)),
-  ])
-  return { ...lesson, steps, preps, materials: files }
+  return lesson ?? null
 }
 
 export async function createLesson(db: Database, values: LessonValues) {

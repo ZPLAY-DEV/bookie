@@ -10,6 +10,7 @@ export type AppBindings = {
 export type AuthUser = {
   id: string
   email?: string
+  phone?: string
 }
 
 export type AppEnv = {
