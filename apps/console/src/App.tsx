@@ -7,11 +7,10 @@ import {
   ErrorComponent,
   useNotificationProvider,
   ThemedLayout,
-  ThemedTitle,
 } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
 
-import { App as AntdApp } from "antd";
+import { App as AntdApp, Typography } from "antd";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router";
 import routerProvider, {
   NavigateToResource,
@@ -30,6 +29,12 @@ import {
   LessonList,
   LessonShow,
 } from "./pages/lessons";
+import { SchoolCreate, SchoolEdit, SchoolList } from "./pages/schools";
+import {
+  AssociationCreate,
+  AssociationEdit,
+  AssociationList,
+} from "./pages/associations";
 
 function App() {
   return (
@@ -59,6 +64,20 @@ function App() {
                     show: "/lessons/show/:id",
                     meta: { label: "수업" },
                   },
+                  {
+                    name: "schools",
+                    list: "/schools",
+                    create: "/schools/create",
+                    edit: "/schools/edit/:id",
+                    meta: { label: "학교" },
+                  },
+                  {
+                    name: "associations",
+                    list: "/associations",
+                    create: "/associations/create",
+                    edit: "/associations/edit/:id",
+                    meta: { label: "강사 소속" },
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -72,7 +91,34 @@ function App() {
                         key="authenticated-inner"
                         fallback={<CatchAllNavigate to="/login" />}
                       >
-                        <ThemedLayout Header={Header}>
+                        <ThemedLayout
+                          Header={Header}
+                          Title={({ collapsed }) => (
+                            <a
+                              href="/"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                textDecoration: "none",
+                              }}
+                            >
+                              <img
+                                src="/favicon.svg"
+                                alt="북키톡키"
+                                style={{ height: 26, width: 26 }}
+                              />
+                              {!collapsed && (
+                                <Typography.Text
+                                  strong
+                                  style={{ fontSize: 16, whiteSpace: "nowrap" }}
+                                >
+                                  북키톡키 관리자
+                                </Typography.Text>
+                              )}
+                            </a>
+                          )}
+                        >
                           <Outlet />
                         </ThemedLayout>
                       </Authenticated>
@@ -90,6 +136,16 @@ function App() {
                       <Route path="edit/:id" element={<LessonEdit />} />
                       <Route path="show/:id" element={<LessonShow />} />
                     </Route>
+                    <Route path="/schools">
+                      <Route index element={<SchoolList />} />
+                      <Route path="create" element={<SchoolCreate />} />
+                      <Route path="edit/:id" element={<SchoolEdit />} />
+                    </Route>
+                    <Route path="/associations">
+                      <Route index element={<AssociationList />} />
+                      <Route path="create" element={<AssociationCreate />} />
+                      <Route path="edit/:id" element={<AssociationEdit />} />
+                    </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
                   <Route
@@ -105,9 +161,10 @@ function App() {
                         <AuthPage
                           type="login"
                           title={
-                            <ThemedTitle
-                              collapsed={false}
-                              text="제트플레이 늘봄교육"
+                            <img
+                              src="/favicon.svg"
+                              alt="제트플레이 늘봄교육"
+                              style={{ height: 64 }}
                             />
                           }
                         />

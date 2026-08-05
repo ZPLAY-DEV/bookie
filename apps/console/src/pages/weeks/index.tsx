@@ -8,6 +8,7 @@ import {
   useTable,
 } from "@refinedev/antd";
 import { Form, Input, InputNumber, Space, Table } from "antd";
+import { InlineEditCell } from "../../components/inline-edit-cell";
 
 type Week = {
   id: number;
@@ -23,11 +24,38 @@ export const WeekList = () => {
   return (
     <List>
       <Table {...tableProps} rowKey="id">
-        <Table.Column dataIndex="weekNo" title="주차" sorter />
-        <Table.Column dataIndex="theme" title="테마" sorter />
-        <Table.Column dataIndex="subtitle" title="부제" />
+        <Table.Column dataIndex="weekNo" title="주차" sorter width={90} />
+        <Table.Column<Week>
+          dataIndex="theme"
+          title="테마"
+          sorter
+          render={(_, record) => (
+            <InlineEditCell
+              resource="weeks"
+              id={record.id}
+              field="theme"
+              value={record.theme}
+              required
+              placeholder="예: 시원한 책"
+            />
+          )}
+        />
+        <Table.Column<Week>
+          dataIndex="subtitle"
+          title="부제"
+          render={(_, record) => (
+            <InlineEditCell
+              resource="weeks"
+              id={record.id}
+              field="subtitle"
+              value={record.subtitle}
+              placeholder="예: 같은 것을 다르게 느낀다"
+            />
+          )}
+        />
         <Table.Column<Week>
           title="동작"
+          width={110}
           render={(_, record) => (
             <Space>
               <EditButton hideText size="small" recordItemId={record.id} />
@@ -49,7 +77,7 @@ const WeekFormFields = () => (
       <Input placeholder="예: 시원한 책" />
     </Form.Item>
     <Form.Item label="부제" name="subtitle">
-      <Input placeholder="예: 같은 것을 다르게 느끼다, 감각·표현의 관점" />
+      <Input placeholder="예: 같은 것을 다르게 느낀다" />
     </Form.Item>
   </>
 );
