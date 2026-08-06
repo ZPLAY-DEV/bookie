@@ -109,8 +109,8 @@ export function LoginPage() {
             </button>
             {/* 말풍선은 로고 중심에서 살짝 왼쪽에, 꼬리는 로고 중심을 가리키게 */}
             {pokeLine && (
-              <div className="absolute -top-1 left-[calc(50%-14px)] z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
-                <span className="absolute -bottom-1.5 left-[calc(50%+14px)] size-3 -translate-x-1/2 rotate-45 bg-secondary" />
+              <div className="absolute -top-1 left-[calc(50%-22px)] z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
+                <span className="absolute -bottom-1.5 left-[calc(50%+22px)] size-3 -translate-x-1/2 rotate-45 bg-secondary" />
                 <p className="text-sm font-extrabold whitespace-nowrap text-heading">
                   {pokeLine}
                 </p>
