@@ -31,7 +31,7 @@ export function LoginPage() {
       renderer: 'svg',
       loop: true,
       autoplay: true,
-      path: '/logo.json',
+      path: '/lottiefiles/logo.json',
     })
     return () => anim.destroy()
   }, [])
