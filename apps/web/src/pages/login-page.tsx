@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKakaoTalk } from '@fortawesome/free-brands-svg-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
@@ -17,6 +19,7 @@ export function LoginPage() {
     () => localStorage.getItem(REMEMBER_EMAIL_KEY) !== null,
   )
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -89,15 +92,28 @@ export function LoginPage() {
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-bold text-heading">비밀번호</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="h-12 rounded-xl border bg-card px-4 text-[15px] text-heading outline-none placeholder:text-muted-foreground/60 focus:border-ring focus:ring-[3px] focus:ring-ring/30"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="h-12 w-full rounded-xl border bg-card pr-12 pl-4 text-[15px] text-heading outline-none placeholder:text-muted-foreground/60 focus:border-ring focus:ring-[3px] focus:ring-ring/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                title={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+                className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-heading"
+              >
+                <HugeiconsIcon
+                  icon={showPassword ? ViewOffSlashIcon : ViewIcon}
+                  className="size-5"
+                />
+              </button>
+            </div>
           </label>
 
           <label className="flex items-center gap-2 select-none">
