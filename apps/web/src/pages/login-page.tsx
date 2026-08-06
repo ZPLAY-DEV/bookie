@@ -38,11 +38,11 @@ export function LoginPage() {
   const [pokeLine, setPokeLine] = useState<string | null>(null)
   const pokeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 말풍선은 3초 후 사라진다 — 연타하면 문구가 바뀌며 타이머 리셋
+  // 말풍선은 2초 후 사라진다 — 연타하면 문구가 바뀌며 타이머 리셋
   function handleLogoPoke() {
     setPokeLine(POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)])
     if (pokeTimer.current) clearTimeout(pokeTimer.current)
-    pokeTimer.current = setTimeout(() => setPokeLine(null), 3000)
+    pokeTimer.current = setTimeout(() => setPokeLine(null), 2000)
   }
 
   useEffect(() => {
@@ -109,8 +109,8 @@ export function LoginPage() {
             </button>
             {/* 말풍선은 로고 중심에서 살짝 왼쪽에, 꼬리는 로고 중심을 가리키게 */}
             {pokeLine && (
-              <div className="absolute -top-1 left-[calc(50%-22px)] z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
-                <span className="absolute -bottom-1.5 left-[calc(50%+22px)] size-3 -translate-x-1/2 rotate-45 bg-secondary" />
+              <div className="absolute -top-1 left-[calc(50%-30px)] z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
+                <span className="absolute -bottom-1.5 left-[calc(50%+30px)] size-3 -translate-x-1/2 rotate-45 bg-secondary" />
                 <p className="text-sm font-extrabold whitespace-nowrap text-heading">
                   {pokeLine}
                 </p>
