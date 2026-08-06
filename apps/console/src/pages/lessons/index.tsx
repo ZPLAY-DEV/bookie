@@ -15,6 +15,7 @@ import { useNavigation, useShow } from "@refinedev/core";
 import {
   CustomerServiceOutlined,
   DeleteOutlined,
+  DownloadOutlined,
   EyeOutlined,
   FilePdfOutlined,
   FileZipOutlined,
@@ -312,6 +313,60 @@ async function toWebp(bytes: Uint8Array): Promise<{ blob: Blob; ext: string }> {
     // 디코드/인코드 실패 시 원본 폴백
   }
   return { blob: png, ext: "png" };
+}
+
+// PDF 미리보기 — cdn URL은 attachment 헤더 때문에 무조건 다운로드되므로,
+// disposition 없이 서빙되는 워커 경로(api /api/files/*)로 바꿔 iframe에 embed한다
+const inlineFileUrl = (url: string) =>
+  url.replace(`${CDN_BASE}/`, `${dataProvider.getApiUrl()}/api/files/`);
+
+const PdfFileRow = ({ label, url }: { label: string; url: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Space direction="vertical" size={6}>
+      <Typography.Text copyable={{ text: url }}>{url}</Typography.Text>
+      <Space>
+        <Button size="small" icon={<EyeOutlined />} onClick={() => setOpen(true)}>
+          미리보기
+        </Button>
+        {/* cdn 링크는 attachment — 클릭 시 다운로드 */}
+        <Button size="small" icon={<DownloadOutlined />} href={url}>
+          다운로드
+        </Button>
+      </Space>
+      <Modal
+        open={open}
+        title={label}
+        footer={null}
+        width="80vw"
+        onCancel={() => setOpen(false)}
+        destroyOnHidden
+      >
+        <iframe
+          src={inlineFileUrl(url)}
+          title={label}
+          style={{ width: "100%", height: "75vh", border: "none" }}
+        />
+      </Modal>
+    </Space>
+  );
+};
+
+// 유튜브 링크 → 영상 ID (watch?v= / youtu.be / shorts 지원) — 썸네일 표시용
+function youtubeVideoId(link: string): string | null {
+  try {
+    const url = new URL(link);
+    return (
+      url.searchParams.get("v") ??
+      (url.hostname === "youtu.be"
+        ? url.pathname.slice(1)
+        : url.pathname.startsWith("/shorts/")
+          ? url.pathname.split("/")[2]
+          : null)
+    );
+  } catch {
+    return null;
+  }
 }
 
 /* ---- 재생목록 삽입 위치 선택 (공용) ---- */
@@ -817,7 +872,7 @@ export const LessonList = () => {
       <Table {...tableProps} rowKey="id">
         <Table.Column<Lesson>
           dataIndex="image"
-          title="이미지"
+          title="대표 이미지"
           width={64}
           render={(image: string | null, record) => (
             // 이미지 클릭 → 상세(show) 페이지
@@ -952,24 +1007,10 @@ export const LessonShow = () => {
             <Descriptions.Item label="수업 설명" span={2}>
               {lesson.description ?? "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="슬라이드 장수">
+            <Descriptions.Item label="슬라이드 장수" span={2}>
               {lesson.slideCount ?? "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="파일">
-              <Space direction="vertical" size={2}>
-                {lesson.lessonDownload ? (
-                  <a href={lesson.lessonDownload}>{lesson.lessonDownload}</a>
-                ) : (
-                  "-"
-                )}
-                {lesson.guideDownload ? (
-                  <a href={lesson.guideDownload}>{lesson.guideDownload}</a>
-                ) : (
-                  "-"
-                )}
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="이미지" span={2}>
+            <Descriptions.Item label="대표 이미지" span={2}>
               {lesson.image ? (
                 <Space direction="vertical">
                   <Typography.Text copyable={{ text: lesson.image }}>
@@ -981,6 +1022,20 @@ export const LessonShow = () => {
                     style={{ maxWidth: 640, width: "100%" }}
                   />
                 </Space>
+              ) : (
+                "-"
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="수업자료 PDF" span={2}>
+              {lesson.lessonDownload ? (
+                <PdfFileRow label="수업자료 PDF" url={lesson.lessonDownload} />
+              ) : (
+                "-"
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="지도안 PDF" span={2}>
+              {lesson.guideDownload ? (
+                <PdfFileRow label="지도안 PDF" url={lesson.guideDownload} />
               ) : (
                 "-"
               )}
@@ -1028,6 +1083,42 @@ export const LessonShow = () => {
               render={(type: string) => (
                 <Tag>{{ image: "슬라이드", youtube: "유튜브", music: "음악", video: "영상" }[type] ?? type}</Tag>
               )}
+            />
+            <Table.Column
+              dataIndex="value"
+              title="썸네일"
+              width={90}
+              render={(value: string, record: { type: string }) => {
+                // 슬라이드는 원본, 유튜브는 공식 썸네일, 음악/영상은 아이콘
+                if (record.type === "image") {
+                  return (
+                    <Image
+                      src={value}
+                      width={72}
+                      height={40}
+                      style={{ objectFit: "cover", borderRadius: 4 }}
+                    />
+                  );
+                }
+                if (record.type === "youtube") {
+                  const id = youtubeVideoId(value);
+                  return id ? (
+                    <Image
+                      src={`https://img.youtube.com/vi/${id}/default.jpg`}
+                      width={72}
+                      height={40}
+                      style={{ objectFit: "cover", borderRadius: 4 }}
+                    />
+                  ) : (
+                    "▶️"
+                  );
+                }
+                return (
+                  <span style={{ fontSize: 24 }}>
+                    {record.type === "music" ? "🎵" : "🎬"}
+                  </span>
+                );
+              }}
             />
             <Table.Column
               dataIndex="value"
@@ -1268,7 +1359,7 @@ const LessonForm = ({
         <FileSlot
           form={form}
           name="image"
-          label="이미지"
+          label="대표 이미지"
           kind="image"
           prefix={prefix}
           standardBase={prefix}
