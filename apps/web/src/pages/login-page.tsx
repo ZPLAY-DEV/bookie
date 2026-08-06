@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKakaoTalk } from '@fortawesome/free-brands-svg-icons'
@@ -10,6 +10,9 @@ import { LottieLogo } from '@/components/lottie-logo'
 import { supabase } from '@/lib/supabase'
 
 const REMEMBER_EMAIL_KEY = 'bookie-remembered-email'
+
+// 로고를 클릭(콕콕)하면 말풍선으로 랜덤하게 투덜댄다
+const POKE_LINES = ['아!', '그만 찔러', '노안 온다구!', '침침해', '그만!', '제발', '플리즈', '뭘 원해?']
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -23,6 +26,21 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [pokeLine, setPokeLine] = useState<string | null>(null)
+  const pokeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 말풍선은 3초 후 사라진다 — 연타하면 문구가 바뀌며 타이머 리셋
+  function handleLogoPoke() {
+    setPokeLine(POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)])
+    if (pokeTimer.current) clearTimeout(pokeTimer.current)
+    pokeTimer.current = setTimeout(() => setPokeLine(null), 3000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (pokeTimer.current) clearTimeout(pokeTimer.current)
+    }
+  }, [])
 
   // 카카오 OAuth 콜백으로 돌아왔을 때(또는 이미 로그인 상태일 때) 대시보드로 이동
   useEffect(() => {
@@ -72,7 +90,19 @@ export function LoginPage() {
     <div className="flex h-full items-center justify-center p-7">
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 shadow-sm">
         <div className="flex flex-col items-center text-center">
-          <LottieLogo className="size-32" />
+          <div className="relative">
+            <button type="button" onClick={handleLogoPoke} className="cursor-pointer">
+              <LottieLogo className="size-32" />
+            </button>
+            {pokeLine && (
+              <div className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
+                <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-secondary" />
+                <p className="text-sm font-extrabold whitespace-nowrap text-heading">
+                  {pokeLine}
+                </p>
+              </div>
+            )}
+          </div>
           <p className="mt-3 text-sm text-muted-foreground">
             오늘의 수업을 시작하려면 로그인해 주세요
           </p>
