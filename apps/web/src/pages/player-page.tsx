@@ -123,8 +123,10 @@ export function PlayerPage() {
   const { data: lesson } = useQuery(lessonQuery(Number(lessonId)))
 
   const [slideIdx, setSlideIdx] = useState(() => Math.max((start ?? 1) - 1, 0))
-  // 야옹이 메뉴 — '수업 마치기'에서 열리고 일시정지/나가기/재개를 고른다
+  // 야옹이 메뉴 — '수업 마치기'에서 열리고 목록 숨김/나가기/목록 공개를 고른다
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  // 목록 숨김 — 하단 타임라인을 감추고 슬라이드를 세로 공간에 꽉 차게 키운다
+  const [listHidden, setListHidden] = useState(false)
   // 잠깐 멈춤 — 슬라이드 자동 진행을 멈춘다 (화살표/타임라인 수동 이동은 그대로)
   const [paused, setPaused] = useState(false)
   // 슬라이드 전환 간격(초) — 팝업에서 조정하면 모든 슬라이드에 일괄 적용
@@ -255,7 +257,12 @@ export function PlayerPage() {
           <HugeiconsIcon icon={ArrowLeft01Icon} className="size-7" />
         </button>
 
-        <div className="relative aspect-video w-full max-w-[1400px] overflow-hidden rounded-lg border bg-muted">
+        <div
+          className={cn(
+            'relative aspect-video overflow-hidden rounded-lg border bg-muted',
+            listHidden ? 'h-full w-auto' : 'w-full max-w-[1400px]',
+          )}
+        >
           {current == null ? (
             <div className="flex size-full items-center justify-center text-muted-foreground">
               재생목록이 아직 준비되지 않았어요
@@ -340,7 +347,7 @@ export function PlayerPage() {
         </button>
       </main>
 
-        {total > 0 && (
+        {total > 0 && !listHidden && (
           <Timeline playlist={playlist} activeIdx={slideIdx} onSelect={setSlideIdx} />
         )}
 
@@ -363,7 +370,7 @@ export function PlayerPage() {
                 router.history.back()
                 return
               }
-              setPaused(action === 'pause')
+              setListHidden(action === 'hideList')
               setShowExitConfirm(false)
             }}
           />
@@ -520,15 +527,15 @@ function IntervalPopup({
   )
 }
 
-type ExitAction = 'pause' | 'exit' | 'resume'
+type ExitAction = 'hideList' | 'exit' | 'showList'
 
 const EXIT_REASONS: { emoji: string; label: string; action: ExitAction }[] = [
-  { emoji: '✋', label: '잠깐 멈춤', action: 'pause' },
+  { emoji: '🙈', label: '목록 숨김', action: 'hideList' },
   { emoji: '🥺', label: '그만할래', action: 'exit' },
-  { emoji: '🚗', label: '계속 진행', action: 'resume' },
+  { emoji: '📋', label: '목록 공개', action: 'showList' },
 ]
 
-// 야옹이 메뉴 — 잠깐 멈춤(일시정지) / 그만할래(나가기) / 다시 시작(재개).
+// 야옹이 메뉴 — 목록 숨김(타임라인 감춤+슬라이드 확대) / 그만할래(나가기) / 목록 공개.
 // 카드 3장이 겹쳐 있다가 hover 시 부채꼴로 펼쳐진다 (magicui feature-card 스타일 연출)
 function ExitConfirm({
   onAction,
