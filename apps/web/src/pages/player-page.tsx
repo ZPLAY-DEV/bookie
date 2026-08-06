@@ -261,10 +261,12 @@ export function PlayerPage() {
               재생목록이 아직 준비되지 않았어요
             </div>
           ) : current.type === 'image' ? (
+            // 본문 클릭으로 자동 진행 일시정지 ⇄ 재생 토글
             <img
               src={current.value}
               alt={`슬라이드 ${slideIdx + 1}`}
-              className="size-full object-contain"
+              onClick={() => setPaused((p) => !p)}
+              className="size-full cursor-pointer object-contain"
             />
           ) : current.type === 'youtube' && videoId ? (
             <YoutubeStep key={slideIdx} videoId={videoId} onDone={goNext} />
@@ -314,9 +316,16 @@ export function PlayerPage() {
             </span>
           )}
           {paused && (
-            <span className="absolute bottom-4 left-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white">
-              ⏸ 잠깐 멈춤 — 야옹이에게 '계속 진행'을 말해주세요
-            </span>
+            <>
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="flex size-24 items-center justify-center rounded-full bg-black/50 text-white">
+                  <HugeiconsIcon icon={PauseIcon} className="size-12" fill="currentColor" />
+                </span>
+              </span>
+              <span className="absolute bottom-4 left-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white">
+                ⏸ 잠깐 멈춤 — 화면을 클릭하면 다시 재생돼요
+              </span>
+            </>
           )}
         </div>
 
