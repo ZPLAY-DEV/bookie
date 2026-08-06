@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AppSidebar } from '@/components/app-sidebar'
 import { LessonHero } from '@/components/lesson-hero'
+import { LottieLogo } from '@/components/lottie-logo'
 import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -253,7 +254,7 @@ function DefaultSchoolConfirm({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="flex h-full items-center justify-center p-7">
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 text-center shadow-sm">
-        <img src="/logo-title.svg" alt="북키톡키" className="mx-auto size-24" />
+        <LottieLogo className="mx-auto size-24" />
         <p className="mt-4 text-[15px] leading-relaxed text-heading">
           등록된 학교가 없어서
           <br />
