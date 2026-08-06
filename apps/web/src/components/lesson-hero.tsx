@@ -30,18 +30,18 @@ export function LessonHero({
     CATEGORY_GRADIENTS[lesson.category] ?? CATEGORY_GRADIENTS['책놀이']
 
   return (
-    <section className="flex gap-8 rounded-3xl border bg-card p-4 shadow-sm">
+    <section className="flex gap-8 rounded-[32px] border bg-card shadow-sm">
       {lesson.image && (
         <img
           src={lesson.image}
           alt=""
-          className="aspect-square w-[37%] shrink-0 rounded-2xl object-cover"
+          className="aspect-[578/525] w-[37%] shrink-0 rounded-[32px] object-cover"
         />
       )}
-      <div className="flex flex-1 flex-col py-2 pr-6">
+      <div className="flex flex-1 flex-col py-6.5 pr-8">
         <div className="flex items-center gap-5">
           <span
-            className="rounded-full px-4 py-1.5 text-sm font-bold text-white"
+            className="rounded-full px-5 py-2.5 text-[18px] leading-none font-bold text-white"
             style={{ backgroundColor: CATEGORY_COLORS[lesson.category] ?? '#fbb93c' }}
           >
             {WEEKDAY_LABELS[lesson.dayIndex - 1]}요일 {lesson.category}
@@ -56,7 +56,7 @@ export function LessonHero({
           as="h2"
           animation="slideUp"
           by="word"
-          className="mt-3.5 text-[32px] font-extrabold text-heading"
+          className="mt-4.5 text-[44px] font-extrabold text-heading"
         >
           {lesson.title}
         </TextAnimate>

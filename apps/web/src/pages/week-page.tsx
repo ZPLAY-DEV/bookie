@@ -63,11 +63,9 @@ export function WeekPage() {
   // 첫 로딩 — 실제 레이아웃과 같은 뼈대의 스켈레톤으로 점핑 없이 채운다
   if (!me) {
     return (
-      <div className="min-h-svh p-7">
-        <div className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1880px] overflow-hidden rounded-3xl border bg-sidebar shadow-sm">
-          <AppSidebar activeWeekNo={Number(weekNo)} />
-          <WeekMainSkeleton />
-        </div>
+      <div className="flex h-full">
+        <AppSidebar activeWeekNo={Number(weekNo)} />
+        <WeekMainSkeleton />
       </div>
     )
   }
@@ -86,24 +84,23 @@ export function WeekPage() {
   const contentLoading = !weeks || (!!week && !detail)
 
   return (
-    <div className="min-h-svh p-7">
-      <div className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1880px] overflow-hidden rounded-3xl border bg-sidebar shadow-sm">
-        <AppSidebar activeWeekNo={Number(weekNo)} />
+    <div className="flex h-full">
+      <AppSidebar activeWeekNo={Number(weekNo)} />
 
         {contentLoading ? (
           <WeekMainSkeleton />
         ) : (
-        <main className="flex-1 bg-card px-12 py-9">
+        <main className="flex-1 overflow-y-auto bg-card py-8 pl-8 pr-7">
           <header className="flex items-center justify-between">
             <div>
-              <h1 className="text-[26px] font-extrabold text-heading">
+              <h1 className="text-[32px] leading-none font-extrabold text-heading">
                 이번 주 테마 '{week?.theme ?? ''}'
               </h1>
               {week?.subtitle && (
-                <p className="mt-1.5 text-[13px] text-muted-foreground">{week.subtitle}</p>
+                <p className="mt-1.5 text-sm text-muted-foreground">{week.subtitle}</p>
               )}
             </div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1">
               {WEEKDAY_LABELS.map((label, i) => {
                 const active = weekday === i + 1
                 const color = CATEGORY_COLORS[DAY_CATEGORY[i]]
@@ -113,7 +110,7 @@ export function WeekPage() {
                     type="button"
                     onClick={() => setWeekday(i + 1)}
                     className={cn(
-                      'size-11 rounded-full text-[15px] font-bold transition-colors',
+                      'size-14 rounded-full text-[18px] font-bold transition-colors',
                       active
                         ? 'text-white'
                         : 'border bg-card text-foreground hover:bg-muted',
@@ -137,7 +134,7 @@ export function WeekPage() {
             </div>
           </header>
 
-          <div className="mt-7">
+          <div className="mt-6">
             {featured ? (
               <LessonHero lesson={featured} weekSubtitle={week?.subtitle ?? null} />
             ) : (
@@ -148,9 +145,9 @@ export function WeekPage() {
           </div>
 
           {others.length > 0 && (
-            <section className="mt-9">
+            <section className="mt-12">
               <div className="flex items-end justify-between">
-                <h2 className="text-[22px] font-extrabold text-heading">
+                <h2 className="text-[32px] leading-none font-extrabold text-heading">
                   이번 주 다른 요일 수업
                 </h2>
                 <ul className="flex items-center gap-4">
@@ -165,7 +162,7 @@ export function WeekPage() {
                   ))}
                 </ul>
               </div>
-              <div className="mt-5 grid grid-cols-4 gap-7">
+              <div className="mt-6 grid grid-cols-4 gap-8">
                 {others.map((lesson) => (
                   <LessonCard
                     key={lesson.id}
@@ -178,7 +175,6 @@ export function WeekPage() {
           )}
         </main>
         )}
-      </div>
     </div>
   )
 }
@@ -186,22 +182,22 @@ export function WeekPage() {
 // 주차 대시보드 본문과 같은 골격의 로딩 스켈레톤
 function WeekMainSkeleton() {
   return (
-    <main className="flex-1 bg-card px-12 py-9">
+    <main className="flex-1 overflow-y-auto bg-card py-8 pl-8 pr-7">
       <header className="flex items-center justify-between">
         <div>
-          <Skeleton className="h-8 w-80" />
+          <Skeleton className="h-12 w-96" />
           <Skeleton className="mt-2.5 h-4 w-48" />
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1">
           {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="size-11 rounded-full" />
+            <Skeleton key={i} className="size-14 rounded-full" />
           ))}
           <Skeleton className="ml-2 size-13 rounded-full" />
         </div>
       </header>
-      <div className="mt-7 flex gap-8 rounded-3xl border bg-card p-4 shadow-sm">
-        <Skeleton className="aspect-square w-[37%] shrink-0 rounded-2xl" />
-        <div className="flex flex-1 flex-col py-2 pr-6">
+      <div className="mt-6 flex gap-8 rounded-[32px] border bg-card shadow-sm">
+        <Skeleton className="aspect-[578/525] w-[37%] shrink-0 rounded-[32px]" />
+        <div className="flex flex-1 flex-col py-6.5 pr-8">
           <Skeleton className="h-8 w-44 rounded-full" />
           <Skeleton className="mt-4 h-9 w-3/4" />
           <Skeleton className="mt-3 h-4 w-full" />
@@ -224,12 +220,12 @@ function WeekMainSkeleton() {
           </div>
         </div>
       </div>
-      <div className="mt-9">
-        <Skeleton className="h-7 w-56" />
-        <div className="mt-5 grid grid-cols-4 gap-7">
+      <div className="mt-12">
+        <Skeleton className="h-9 w-72" />
+        <div className="mt-6 grid grid-cols-4 gap-8">
           {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border">
-              <Skeleton className="aspect-[338/194] w-full rounded-none" />
+            <div key={i} className="overflow-hidden rounded-[32px] border">
+              <Skeleton className="aspect-[364/208] w-full rounded-none" />
               <div className="px-5 py-4">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="mt-2 h-4 w-1/3" />
@@ -255,7 +251,7 @@ function DefaultSchoolConfirm({ onLogout }: { onLogout: () => void }) {
   })
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-7">
+    <div className="flex h-full items-center justify-center p-7">
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 text-center shadow-sm">
         <img src="/logo-title.svg" alt="북키톡키" className="mx-auto size-24" />
         <p className="mt-4 text-[15px] leading-relaxed text-heading">
@@ -296,7 +292,7 @@ function SchoolPicker({
   onSelect: (schoolId: number) => void
 }) {
   return (
-    <div className="flex min-h-svh items-center justify-center p-7">
+    <div className="flex h-full items-center justify-center p-7">
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 shadow-sm">
         <h1 className="text-center text-[22px] font-extrabold text-heading">
           어느 학교로 들어갈까요?
@@ -326,13 +322,13 @@ function LessonCard({ lesson, onSelect }: { lesson: Lesson; onSelect: () => void
     <button
       type="button"
       onClick={onSelect}
-      className="overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-shadow hover:shadow-md"
+      className="overflow-hidden rounded-[32px] border bg-card text-left shadow-sm transition-shadow hover:shadow-md"
     >
       {lesson.image && (
         <img
           src={lesson.image}
           alt=""
-          className="aspect-[338/194] w-full object-cover"
+          className="aspect-[364/208] w-full object-cover"
         />
       )}
       <div className="px-5 py-4">

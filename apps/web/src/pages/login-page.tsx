@@ -65,7 +65,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-7">
+    <div className="flex h-full items-center justify-center p-7">
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 shadow-sm">
         <div className="flex flex-col items-center text-center">
           <img src="/logo-title.svg" alt="북키톡키" className="size-32" />

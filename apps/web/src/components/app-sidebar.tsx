@@ -42,14 +42,14 @@ export function AppSidebar({
   }
 
   return (
-    <aside className="flex w-70 shrink-0 flex-col border-r bg-sidebar px-7 pt-9 pb-10">
+    <aside className="flex w-76 shrink-0 flex-col border-r bg-sidebar px-8 pt-9 pb-10">
       <Link to="/weeks/$weekNo" params={{ weekNo: '1' }}>
         <img src="/images/title.png" alt="북키톡키" className="w-55 self-start" />
       </Link>
-      <nav className="mt-9 flex flex-col gap-3.5">
+      <nav className="mt-9 flex flex-col gap-2">
         {!weeks &&
           Array.from({ length: 12 }, (_, i) => (
-            <Skeleton key={i} className="h-11 w-full rounded-xl" />
+            <Skeleton key={i} className="h-14 w-full rounded-xl" />
           ))}
         {weeks?.data.map((w) => (
           <Link
@@ -58,7 +58,7 @@ export function AppSidebar({
             params={{ weekNo: String(w.weekNo) }}
             className={cn(
               buttonVariants({ variant: 'secondary' }),
-              'h-11 w-full rounded-xl border-border/60 text-[15px] font-bold',
+              'h-14 w-full rounded-xl border-border/60 text-[18px] font-bold',
               w.weekNo === activeWeekNo &&
                 'bg-sidebar-primary text-sidebar-primary-foreground shadow-md hover:bg-sidebar-primary',
             )}

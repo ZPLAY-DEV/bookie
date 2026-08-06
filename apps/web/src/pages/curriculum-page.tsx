@@ -25,11 +25,10 @@ export function CurriculumPage() {
   const weekCount = weeks?.data.length ?? 12
 
   return (
-    <div className="min-h-svh p-7">
-      <div className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1880px] overflow-hidden rounded-3xl border bg-card shadow-sm">
-        <AppSidebar curriculumActive />
+    <div className="flex h-full">
+      <AppSidebar curriculumActive />
 
-        <main className="flex-1 px-12 py-9">
+        <main className="flex-1 overflow-y-auto px-12 py-9">
           <header className="flex items-center justify-between">
             <div className="flex items-start gap-3">
               <button
@@ -103,7 +102,6 @@ export function CurriculumPage() {
             </table>
           </div>
         </main>
-      </div>
     </div>
   )
 }

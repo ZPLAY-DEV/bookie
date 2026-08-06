@@ -208,8 +208,8 @@ export function PlayerPage() {
   }
 
   return (
-    <div className="min-h-svh p-7">
-      <div className="mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-[1880px] flex-col overflow-hidden rounded-3xl border bg-card shadow-sm">
+    <div className="h-full p-7">
+      <div className="mx-auto flex h-full max-w-[1880px] flex-col overflow-hidden rounded-3xl border bg-card shadow-sm">
         {/* 로고는 대시보드 사이드바와 동일 좌표(left 28px/top 36px/w 220px)에 고정 — 페이지 전환 시 점핑 방지 */}
         <header className="relative flex h-28 items-center justify-center">
           <Link

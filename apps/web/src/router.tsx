@@ -1,9 +1,12 @@
 import {
+  Outlet,
   createRootRoute,
   createRoute,
   createRouter,
   redirect,
 } from '@tanstack/react-router'
+
+import { ScaledViewport } from '@/components/scaled-viewport'
 
 import { CurriculumPage } from '@/pages/curriculum-page'
 import { LoginPage } from '@/pages/login-page'
@@ -17,7 +20,14 @@ async function requireSession() {
   if (!data.session) throw redirect({ to: '/login' })
 }
 
-const rootRoute = createRootRoute()
+// 모든 화면은 1920×1080 고정 캔버스에 원본 크기로 렌더되고, 뷰포트가 작으면 잘려 보인다
+const rootRoute = createRootRoute({
+  component: () => (
+    <ScaledViewport>
+      <Outlet />
+    </ScaledViewport>
+  ),
+})
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
