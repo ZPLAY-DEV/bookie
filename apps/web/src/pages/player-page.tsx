@@ -530,9 +530,9 @@ function IntervalPopup({
 type ExitAction = 'hideList' | 'exit' | 'showList'
 
 const EXIT_REASONS: { emoji: string; label: string; action: ExitAction }[] = [
-  { emoji: '🙈', label: '타임라인 숨김', action: 'hideList' },
+  { emoji: '🫣', label: '타임라인 숨김', action: 'hideList' },
   { emoji: '🥺', label: '그만할래', action: 'exit' },
-  { emoji: '📋', label: '타임라인 공개', action: 'showList' },
+  { emoji: '😎', label: '타임라인 공개', action: 'showList' },
 ]
 
 // 야옹이 메뉴 — 타임라인 숨김(슬라이드 확대) / 그만할래(나가기) / 타임라인 공개.
