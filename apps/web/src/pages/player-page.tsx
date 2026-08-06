@@ -123,9 +123,9 @@ export function PlayerPage() {
   const { data: lesson } = useQuery(lessonQuery(Number(lessonId)))
 
   const [slideIdx, setSlideIdx] = useState(() => Math.max((start ?? 1) - 1, 0))
-  // 야옹이 메뉴 — '수업 마치기'에서 열리고 목록 숨김/나가기/목록 공개를 고른다
+  // 야옹이 메뉴 — '수업 마치기'에서 열리고 타임라인 숨김/나가기/타임라인 공개를 고른다
   const [showExitConfirm, setShowExitConfirm] = useState(false)
-  // 목록 숨김 — 하단 타임라인을 감추고 슬라이드를 세로 공간에 꽉 차게 키운다
+  // 타임라인 숨김 — 하단 타임라인을 감추고 슬라이드를 세로 공간에 꽉 차게 키운다
   const [listHidden, setListHidden] = useState(false)
   // 잠깐 멈춤 — 슬라이드 자동 진행을 멈춘다 (화살표/타임라인 수동 이동은 그대로)
   const [paused, setPaused] = useState(false)
@@ -530,12 +530,12 @@ function IntervalPopup({
 type ExitAction = 'hideList' | 'exit' | 'showList'
 
 const EXIT_REASONS: { emoji: string; label: string; action: ExitAction }[] = [
-  { emoji: '🙈', label: '목록 숨김', action: 'hideList' },
+  { emoji: '🙈', label: '타임라인 숨김', action: 'hideList' },
   { emoji: '🥺', label: '그만할래', action: 'exit' },
-  { emoji: '📋', label: '목록 공개', action: 'showList' },
+  { emoji: '📋', label: '타임라인 공개', action: 'showList' },
 ]
 
-// 야옹이 메뉴 — 목록 숨김(타임라인 감춤+슬라이드 확대) / 그만할래(나가기) / 목록 공개.
+// 야옹이 메뉴 — 타임라인 숨김(슬라이드 확대) / 그만할래(나가기) / 타임라인 공개.
 // 카드 3장이 겹쳐 있다가 hover 시 부채꼴로 펼쳐진다 (magicui feature-card 스타일 연출)
 function ExitConfirm({
   onAction,
