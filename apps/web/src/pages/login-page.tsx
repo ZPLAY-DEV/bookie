@@ -35,14 +35,18 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [pokeLine, setPokeLine] = useState<string | null>(null)
+  const [poke, setPoke] = useState<{ id: number; line: string } | null>(null)
+  const pokeSeq = useRef(0)
   const pokeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 말풍선은 2초 후 사라진다 — 연타하면 문구가 바뀌며 타이머 리셋
+  // 말풍선은 1초 만에 fade in/out 후 사라진다 — 연타하면(id 갱신) 애니메이션·타이머 리셋
   function handleLogoPoke() {
-    setPokeLine(POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)])
+    setPoke({
+      id: ++pokeSeq.current,
+      line: POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)],
+    })
     if (pokeTimer.current) clearTimeout(pokeTimer.current)
-    pokeTimer.current = setTimeout(() => setPokeLine(null), 2000)
+    pokeTimer.current = setTimeout(() => setPoke(null), 1000)
   }
 
   useEffect(() => {
@@ -108,11 +112,14 @@ export function LoginPage() {
               <LottieLogo className="size-32" />
             </button>
             {/* 말풍선은 로고 중심에서 살짝 왼쪽에, 꼬리는 로고 중심을 가리키게 */}
-            {pokeLine && (
-              <div className="absolute -top-1 left-[calc(50%-30px)] z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
+            {poke && (
+              <div
+                key={poke.id}
+                className="absolute -top-1 left-[calc(50%-30px)] z-10 -translate-x-1/2 -translate-y-full animate-[poke-bubble_1s_ease-in-out_both] rounded-2xl bg-secondary px-4 py-2 shadow-md"
+              >
                 <span className="absolute -bottom-1.5 left-[calc(50%+30px)] size-3 -translate-x-1/2 rotate-45 bg-secondary" />
                 <p className="text-sm font-extrabold whitespace-nowrap text-heading">
-                  {pokeLine}
+                  {poke.line}
                 </p>
               </div>
             )}

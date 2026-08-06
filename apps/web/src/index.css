@@ -105,3 +105,19 @@ body {
     @apply bg-background text-foreground;}
   html {
     @apply font-sans;}}
+
+/* 로그인 로고 말풍선 — 1초 동안 fade in → 유지 → fade out */
+@keyframes poke-bubble {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
