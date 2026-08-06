@@ -210,15 +210,14 @@ export function PlayerPage() {
   }
 
   return (
-    <div className="h-full p-7">
-      <div className="mx-auto flex h-full max-w-[1880px] flex-col overflow-hidden rounded-3xl border bg-card shadow-sm">
-        {/* 로고는 대시보드 사이드바와 동일 좌표(left 28px/top 36px/w 220px)에 고정 — 페이지 전환 시 점핑 방지 */}
+    <div className="flex h-full flex-col bg-card">
+        {/* 로고는 대시보드 사이드바와 동일 좌표(left 32px/top 36px/w 220px)에 고정 — 페이지 전환 시 점핑 방지 */}
         <header className="relative flex h-28 items-center justify-center">
           <Link
             to="/weeks/$weekNo"
             params={{ weekNo: '1' }}
             title="홈으로"
-            className="absolute top-9 left-7"
+            className="absolute top-9 left-8"
           >
             <img src="/images/title.png" alt="북키톡키" className="w-55" />
           </Link>
@@ -380,7 +379,6 @@ export function PlayerPage() {
         {canNext && playlist[slideIdx + 1]?.type === 'image' && (
           <img src={playlist[slideIdx + 1].value} alt="" className="hidden" />
         )}
-      </div>
     </div>
   )
 }
