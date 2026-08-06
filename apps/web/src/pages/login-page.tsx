@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import lottie from 'lottie-web'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKakaoTalk } from '@fortawesome/free-brands-svg-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -20,6 +21,20 @@ export function LoginPage() {
   )
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const logoRef = useRef<HTMLDivElement | null>(null)
+
+  // 상단 로고 — 정적 SVG 대신 로티 애니메이션(public/logo.json) 재생
+  useEffect(() => {
+    if (!logoRef.current) return
+    const anim = lottie.loadAnimation({
+      container: logoRef.current,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: '/logo.json',
+    })
+    return () => anim.destroy()
+  }, [])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -71,7 +86,7 @@ export function LoginPage() {
     <div className="flex h-full items-center justify-center p-7">
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 shadow-sm">
         <div className="flex flex-col items-center text-center">
-          <img src="/logo-title.svg" alt="북키톡키" className="size-32" />
+          <div ref={logoRef} role="img" aria-label="북키톡키" className="size-32" />
           <p className="mt-3 text-sm text-muted-foreground">
             오늘의 수업을 시작하려면 로그인해 주세요
           </p>
