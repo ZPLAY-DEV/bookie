@@ -19,7 +19,7 @@ export function WeekPage() {
   const { day } = useSearch({ from: '/weeks/$weekNo' })
   const navigate = useNavigate()
   // 요일은 URL(?day=)에 실어 /play 갔다가 뒤로 와도 그대로 복원되게 한다
-  const weekday = day ?? 5
+  const weekday = day ?? 1
   const setWeekday = (d: number) =>
     navigate({
       to: '/weeks/$weekNo',
