@@ -1,18 +1,27 @@
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKakaoTalk } from '@fortawesome/free-brands-svg-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { useNavigate } from '@tanstack/react-router'
+import { useEffect, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { LottieLogo } from '@/components/lottie-logo'
+import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 
 const REMEMBER_EMAIL_KEY = 'bookie-remembered-email'
 
 // 로고를 클릭(콕콕)하면 말풍선으로 랜덤하게 투덜댄다
-const POKE_LINES = ['아!', '그만 찔러', '노안 온다구!', '침침해', '그만!', '제발', '플리즈', '뭘 원해?']
+const POKE_LINES = [
+  '아!',
+  '그만 찔러',
+  '노안 온다구!',
+  '침침해',
+  '화낸다!',
+  '제발',
+  '야옹~',
+  '뭘 원해?',
+]
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -91,12 +100,17 @@ export function LoginPage() {
       <div className="w-full max-w-105 rounded-3xl border bg-card p-10 shadow-sm">
         <div className="flex flex-col items-center text-center">
           <div className="relative">
-            <button type="button" onClick={handleLogoPoke} className="cursor-pointer">
+            <button
+              type="button"
+              onClick={handleLogoPoke}
+              className="cursor-pointer"
+            >
               <LottieLogo className="size-32" />
             </button>
             {pokeLine && (
-              <div className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
-                <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-secondary" />
+              {/* 말풍선은 로고 중심에서 살짝 왼쪽에, 꼬리는 로고 중심을 가리키게 */}
+              <div className="absolute -top-1 left-[calc(50%-14px)] z-10 -translate-x-1/2 -translate-y-full rounded-2xl bg-secondary px-4 py-2 shadow-md">
+                <span className="absolute -bottom-1.5 left-[calc(50%+14px)] size-3 -translate-x-1/2 rotate-45 bg-secondary" />
                 <p className="text-sm font-extrabold whitespace-nowrap text-heading">
                   {pokeLine}
                 </p>
@@ -182,7 +196,11 @@ export function LoginPage() {
             onClick={handleKakaoLogin}
             className="h-13 gap-2 rounded-full bg-[#fee500] text-lg font-bold text-black/85 hover:bg-[#fee500]/90"
           >
-            <FontAwesomeIcon icon={faKakaoTalk} className="size-5" aria-hidden />
+            <FontAwesomeIcon
+              icon={faKakaoTalk}
+              className="size-5"
+              aria-hidden
+            />
             카카오 로그인
           </Button>
         </form>
