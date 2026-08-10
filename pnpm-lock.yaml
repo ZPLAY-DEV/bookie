@@ -162,6 +162,9 @@ importers:
       '@kfonts/line-seed-sans-kr':
         specifier: ^0.1.0
         version: 0.1.0
+      '@noonnu/nanum-square-neo-variable':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@supabase/supabase-js':
         specifier: ^2.111.0
         version: 2.111.0
@@ -1410,6 +1413,9 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@noonnu/nanum-square-neo-variable@0.1.0':
+    resolution: {integrity: sha512-WXemovWowl+ZBWN7v2kwITixoMPdI1BoBMdow2hkh1bfmf0jbsoXUmkEDVIYNLn42CZ25rwLrNXakSLvUWhXKQ==}
 
   '@npmcli/git@5.0.8':
     resolution: {integrity: sha512-liASfw5cqhjNW9UFd+ruwwdEf/lbOAQjLL2XY2dFW/bkJheXDYZgOyul/4gVvEV4BWkTXjYGmDqMw9uegdbJNQ==}
@@ -6625,6 +6631,8 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
+
+  '@noonnu/nanum-square-neo-variable@0.1.0': {}
 
   '@npmcli/git@5.0.8':
     dependencies:

@@ -5,18 +5,19 @@ export const DAY_CATEGORY = ['책놀이', '미술', '음악', '신체', '사회�
 
 // 카테고리별 범례/뱃지 색 (디자인 팔레트 기준)
 export const CATEGORY_COLORS: Record<string, string> = {
-  책놀이: '#fbb93c',
+  책놀이: '#ffc02d',
   미술: '#bc52cb',
   음악: '#f3505c',
   신체: '#2dbcb6',
-  사회정서: '#f2709f',
+  사회정서: '#f571a0',
 }
 
-// 수업 시작 버튼 그라데이션 (밝은 톤 → 기본 톤, 위→아래) — 요일 과목 색을 따라간다
-export const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
-  책놀이: ['#fbb93c', '#f28c2b'],
-  미술: ['#d06edd', '#bc52cb'],
-  음악: ['#f97b84', '#f3505c'],
-  신체: ['#45cfc7', '#2dbcb6'],
-  사회정서: ['#f791b4', '#f2709f'],
+// 흰 배경 위 라벨 텍스트용 색. 책놀이 노랑(#ffc02d)만 그대로 쓰면 읽기 어려워
+// 디자인이 진한 주황을 따로 지정했다. 나머지 과목은 강조색을 그대로 쓴다.
+export const CATEGORY_LABEL_COLORS: Record<string, string> = {
+  책놀이: '#f5a031',
+}
+
+export function categoryLabelColor(category: string) {
+  return CATEGORY_LABEL_COLORS[category] ?? CATEGORY_COLORS[category] ?? '#878b94'
 }

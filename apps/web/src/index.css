@@ -4,6 +4,16 @@
 @import '@fontsource-variable/figtree';
 @import '@kfonts/line-seed-sans-kr/index.css';
 
+/* 디자인 스펙 본문 서체 — 나눔스퀘어 네오(가변, Regular/Bold/ExtraBold 사용) */
+@font-face {
+  font-family: 'NanumSquare Neo';
+  src: url('@noonnu/nanum-square-neo-variable/fonts/nanumsquareneo-variable-normal.woff2')
+    format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -13,41 +23,41 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --background: #fafafa;
-  --foreground: #6c6ba3;
+  --background: #f7f7f5;
+  --foreground: #4f5563;
   --card: #ffffff;
-  --card-foreground: #33315e;
+  --card-foreground: #323843;
   --popover: #ffffff;
-  --popover-foreground: #33315e;
-  --primary: #f28c2b;
+  --popover-foreground: #323843;
+  --primary: #ffc02d;
   --primary-foreground: #ffffff;
-  --secondary: #e8e8f3;
-  --secondary-foreground: #4c4a6d;
-  --muted: #f4f4f8;
-  --muted-foreground: #6b6ba3;
-  --accent: #fbb93c;
+  --secondary: #fcfcfb;
+  --secondary-foreground: #323843;
+  --muted: #f1f1ee;
+  --muted-foreground: #878b94;
+  --accent: #ffc02d;
   --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e9e8f1;
-  --input: #e9e8f1;
-  --ring: #f8c98a;
-  --chart-1: #fbb93c;
+  --border: #f1f1ee;
+  --input: #f1f1ee;
+  --ring: #ffd97a;
+  --chart-1: #ffc02d;
   --chart-2: #bc52cb;
   --chart-3: #f3505c;
   --chart-4: #2dbcb6;
-  --chart-5: #f2709f;
+  --chart-5: #f571a0;
   --radius: 0.75rem;
-  --sidebar: #f3f3f9;
-  --sidebar-foreground: #4c4a6d;
-  --sidebar-primary: #2e2982;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4f5563;
+  --sidebar-primary: #323843;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e8e8f2;
-  --sidebar-accent-foreground: #4c4a6d;
-  --sidebar-border: #e9e8f1;
-  --sidebar-ring: #f8c98a;
+  --sidebar-accent: #fcfcfb;
+  --sidebar-accent-foreground: #323843;
+  --sidebar-border: #f1f1ee;
+  --sidebar-ring: #ffd97a;
 
-  /* 짙은 남보라 헤딩 색 */
-  --heading: #2e2982;
+  /* 제목/본문 강조에 쓰는 짙은 차콜 */
+  --heading: #323843;
 }
 
 body {
@@ -55,7 +65,7 @@ body {
 }
 
 @theme inline {
-  --font-sans: 'LINE Seed Sans KR', 'Figtree Variable', sans-serif;
+  --font-sans: 'NanumSquare Neo', 'LINE Seed Sans KR', 'Figtree Variable', sans-serif;
   --font-heading: var(--font-sans);
   --color-heading: var(--heading);
   --color-sidebar-ring: var(--sidebar-ring);
