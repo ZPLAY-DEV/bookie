@@ -83,6 +83,9 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      lottie-web:
+        specifier: ^5.13.0
+        version: 5.13.0
       react:
         specifier: ^19.1.0
         version: 19.2.8

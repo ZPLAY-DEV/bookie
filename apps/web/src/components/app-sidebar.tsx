@@ -43,7 +43,8 @@ export function AppSidebar({
   return (
     <aside className="flex w-76 shrink-0 flex-col bg-sidebar px-8 pt-8 pb-8">
       <Link to="/weeks/$weekNo" params={{ weekNo: '1' }}>
-        <img src="/images/title.png" alt="북키톡키" className="w-60 self-start" />
+        {/* XD 스펙: 208×40 @ (48,32) — aside 의 px-8(32) + ml-4(16) = 48 */}
+        <img src="/logo-horizontal.svg" alt="북키톡키" className="ml-4 h-10 w-52 self-start" />
       </Link>
       <nav className="mt-[34px] flex flex-col gap-2">
         {!weeks &&

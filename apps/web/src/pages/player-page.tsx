@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useRouter, useSearch } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
+  ArrowLeft02Icon,
+  ArrowRight02Icon,
+  Clock01Icon,
+  Door01Icon,
   PauseIcon,
   PlayIcon,
 } from '@hugeicons/core-free-icons'
@@ -12,6 +14,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { lessonQuery } from '@/lib/queries'
 import { cn } from '@/lib/utils'
+
+// XD 스펙(1920×1080 캔버스) 실측값 — 좌표/크기는 전부 캔버스 절대 좌표다.
+const BG_URL = 'https://cdn.bktk.kr/assets/bg.jpg'
 
 // 유튜브 링크 → 영상 ID (watch?v= / youtu.be / shorts 지원)
 function youtubeId(link: string): string | null {
@@ -125,8 +130,8 @@ export function PlayerPage() {
   const [slideIdx, setSlideIdx] = useState(() => Math.max((start ?? 1) - 1, 0))
   // 야옹이 메뉴 — '수업 마치기'에서 열리고 타임라인 숨김/나가기/타임라인 공개를 고른다
   const [showExitConfirm, setShowExitConfirm] = useState(false)
-  // 타임라인 숨김 — 하단 타임라인을 감추고 슬라이드를 세로 공간에 꽉 차게 키운다
-  const [listHidden, setListHidden] = useState(false)
+  // 타임라인 — XD 스펙 화면에는 없으므로 기본은 숨김. '수업 마치기' 메뉴에서 공개할 수 있다.
+  const [listHidden, setListHidden] = useState(true)
   // 잠깐 멈춤 — 슬라이드 자동 진행을 멈춘다 (화살표/타임라인 수동 이동은 그대로)
   const [paused, setPaused] = useState(false)
   // 슬라이드 전환 간격(초) — 팝업에서 조정하면 모든 슬라이드에 일괄 적용
@@ -210,58 +215,73 @@ export function PlayerPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-card">
-        {/* 로고는 대시보드 사이드바와 동일 좌표(left 32px/top 36px/w 220px)에 고정 — 페이지 전환 시 점핑 방지 */}
-        <header className="relative flex h-28 items-center justify-center">
-          <Link
-            to="/weeks/$weekNo"
-            params={{ weekNo: '1' }}
-            title="홈으로"
-            className="absolute top-9 left-8"
-          >
-            <img src="/images/title.png" alt="북키톡키" className="w-55" />
-          </Link>
-          <h1 className="max-w-[55%] truncate text-center text-[28px] font-extrabold text-[#f5a031]">
-            {lesson?.title ?? ''}
-          </h1>
-          <div className="absolute top-1/2 right-10 flex -translate-y-1/2 items-center gap-5">
-            <span className="text-2xl font-extrabold text-heading tabular-nums">
-              {formatElapsed(elapsed)}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setShowInterval(true)}
-              className="h-11 rounded-full bg-card px-6 text-[15px] font-bold text-heading"
-            >
-              {intervalSec}초 간격
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowExitConfirm(true)}
-              className="h-11 rounded-full bg-card px-6 text-[15px] font-bold text-heading"
-            >
-              수업 마치기
-            </Button>
-          </div>
-        </header>
+    <div
+      className="relative h-full overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: `url(${BG_URL})` }}
+    >
+      {/* 로고 208×40 @ (80,58) */}
+      <Link
+        to="/weeks/$weekNo"
+        params={{ weekNo: '1' }}
+        title="홈으로"
+        className="absolute top-[58px] left-20"
+      >
+        <img src="/logo-horizontal.svg" alt="북키톡키" className="h-10 w-52" />
+      </Link>
 
-      <main className="flex flex-1 items-center justify-center gap-6 px-6 pb-8">
-        <button
-          type="button"
-          onClick={() => setSlideIdx((i) => Math.max(i - 1, 0))}
-          disabled={!canPrev}
-          title="이전 슬라이드"
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-secondary text-heading transition hover:bg-secondary/70 disabled:opacity-40"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-7" />
-        </button>
+      {/* 제목 알약 880×92 @ (522,32) — #323843 / radius 48 */}
+      <div className="absolute top-8 left-[522px] flex h-23 w-220 items-center justify-center rounded-[48px] bg-heading px-12">
+        <h1 className="truncate text-[36px] leading-10 font-extrabold text-white">
+          {lesson?.title ?? ''}
+        </h1>
+      </div>
 
-        <div
-          className={cn(
-            'relative aspect-video overflow-hidden rounded-lg border bg-muted',
-            listHidden ? 'h-full w-auto' : 'w-full max-w-[1400px]',
-          )}
-        >
+      {/* 경과 시간 146×56 @ (1504,50) — 클릭하면 전환 간격 조정 */}
+      <button
+        type="button"
+        onClick={() => setShowInterval(true)}
+        title={`슬라이드 전환 간격 ${intervalSec}초 — 눌러서 조정`}
+        className="absolute top-[50px] left-[1504px] flex h-14 w-[146px] cursor-pointer items-center justify-center gap-2 rounded-[32px] border-2 border-muted-foreground bg-background text-heading"
+      >
+        <HugeiconsIcon icon={Clock01Icon} className="size-5.5" />
+        <span className="text-[16px] leading-[18px] font-extrabold tabular-nums">
+          {formatElapsed(elapsed)}
+        </span>
+      </button>
+
+      {/* 수업 마치기 174×56 @ (1666,50) */}
+      <button
+        type="button"
+        onClick={() => setShowExitConfirm(true)}
+        className="absolute top-[50px] left-[1666px] flex h-14 w-[174px] cursor-pointer items-center justify-center gap-2 rounded-[32px] border-2 border-muted-foreground bg-background text-heading"
+      >
+        <HugeiconsIcon icon={Door01Icon} className="size-5.5" />
+        <span className="text-[16px] leading-[18px] font-bold">수업 마치기</span>
+      </button>
+
+      {/* 좌우 이동 버튼 — 지름 88 원 @ (89,547) / (1743,547) */}
+      <button
+        type="button"
+        onClick={() => setSlideIdx((i) => Math.max(i - 1, 0))}
+        disabled={!canPrev}
+        title="이전 슬라이드"
+        className="absolute top-[547px] left-[89px] flex size-22 cursor-pointer items-center justify-center rounded-full border border-muted-foreground bg-background text-heading transition disabled:opacity-40"
+      >
+        <HugeiconsIcon icon={ArrowLeft02Icon} className="size-12" />
+      </button>
+      <button
+        type="button"
+        onClick={() => setSlideIdx((i) => Math.min(i + 1, Math.max(total - 1, 0)))}
+        disabled={!canNext}
+        title="다음 슬라이드"
+        className="absolute top-[547px] left-[1743px] flex size-22 cursor-pointer items-center justify-center rounded-full border border-muted-foreground bg-background text-heading transition disabled:opacity-40"
+      >
+        <HugeiconsIcon icon={ArrowRight02Icon} className="size-12" />
+      </button>
+
+      {/* 슬라이드 카드 1446×834 @ (237,174) — 안쪽 여백 24, 슬라이드 1398×786 */}
+      <div className="absolute top-[174px] left-[237px] h-[834px] w-[1446px] rounded-[40px] bg-card p-6 shadow-[0_8px_20px_#aa937566]">
+        <div className="relative size-full overflow-hidden rounded-3xl border border-[#e8e8f3] bg-muted">
           {current == null ? (
             <div className="flex size-full items-center justify-center text-muted-foreground">
               재생목록이 아직 준비되지 않았어요
@@ -316,11 +336,6 @@ export function PlayerPage() {
             </div>
           )}
 
-          {total > 0 && (
-            <span className="absolute right-4 bottom-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white tabular-nums">
-              {slideIdx + 1} / {total}
-            </span>
-          )}
           {paused && (
             <>
               <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -334,17 +349,7 @@ export function PlayerPage() {
             </>
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={() => setSlideIdx((i) => Math.min(i + 1, Math.max(total - 1, 0)))}
-          disabled={!canNext}
-          title="다음 슬라이드"
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-secondary text-heading transition hover:bg-secondary/70 disabled:opacity-40"
-        >
-          <HugeiconsIcon icon={ArrowRight01Icon} className="size-7" />
-        </button>
-      </main>
+      </div>
 
         {total > 0 && !listHidden && (
           <Timeline playlist={playlist} activeIdx={slideIdx} onSelect={setSlideIdx} />
@@ -403,10 +408,11 @@ function Timeline({
   }, [activeIdx])
 
   return (
-    <footer className="px-6 pb-6">
+    // 스펙 화면에는 없는 보조 UI — 공개했을 때만 카드 하단에 떠 있게 둔다
+    <footer className="absolute inset-x-0 bottom-4 z-20 px-6">
       <div
         ref={stripRef}
-        className="mx-auto flex max-w-[1400px] justify-center-safe gap-2.5 overflow-x-auto pt-1 pb-1"
+        className="mx-auto flex max-w-[1400px] justify-center-safe gap-2.5 overflow-x-auto rounded-2xl bg-card/85 p-2 backdrop-blur-sm"
       >
         {playlist.map((item, i) => {
           const ytId = item.type === 'youtube' ? youtubeId(item.value) : null

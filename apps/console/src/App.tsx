@@ -3,7 +3,6 @@ import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
 import {
-  AuthPage,
   ErrorComponent,
   useNotificationProvider,
   ThemedLayout,
@@ -26,9 +25,7 @@ import authProvider from "./providers/auth";
 // 특정 문구만 바꾸기 위한 최소 i18n — 나머지 키는 기본 문구를 그대로 통과시킨다
 const i18nProvider = {
   translate: (key: string, options?: unknown, defaultMessage?: string) => {
-    const overrides: Record<string, string> = {
-      "pages.login.title": "관리자 속으로",
-    };
+    const overrides: Record<string, string> = {};
     const fallback =
       typeof options === "string" ? options : defaultMessage;
     return overrides[key] ?? fallback ?? key;
@@ -49,6 +46,7 @@ import {
   AssociationEdit,
   AssociationList,
 } from "./pages/associations";
+import { LoginPage } from "./pages/login";
 
 function App() {
   return (
@@ -172,21 +170,7 @@ function App() {
                       </Authenticated>
                     }
                   >
-                    <Route
-                      path="/login"
-                      element={
-                        <AuthPage
-                          type="login"
-                          title={
-                            <img
-                              src="/favicon.svg"
-                              alt="제트플레이 늘봄교육"
-                              style={{ height: 64 }}
-                            />
-                          }
-                        />
-                      }
-                    />
+                    <Route path="/login" element={<LoginPage />} />
                   </Route>
                 </Routes>
                 <RefineKbar />
