@@ -421,9 +421,11 @@ function Timeline({
     // 스펙 화면에는 없는 보조 UI — 맥 Dock 처럼 화면 아래에서 올라왔다 내려간다
     <footer
       className={cn(
-        'absolute inset-x-0 bottom-4 z-20 px-6 transition-[transform,opacity] duration-350 ease-[cubic-bezier(0.22,1.2,0.36,1)]',
+        // Tailwind v4 의 translate-y-* 는 transform 이 아니라 translate 프로퍼티를 쓴다.
+        // transition 대상도 translate 로 잡아야 실제로 밀려 올라온다 (아니면 위치가 즉시 점프)
+        'absolute inset-x-0 bottom-4 z-20 px-6 transition-[translate,opacity] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)]',
         hidden
-          ? 'pointer-events-none translate-y-[140%] opacity-0'
+          ? 'pointer-events-none translate-y-[calc(100%+2rem)] opacity-0'
           : 'translate-y-0 opacity-100',
       )}
     >
@@ -442,7 +444,7 @@ function Timeline({
               title={`${i + 1}번째 슬라이드`}
               className={cn(
                 // Dock 아이콘처럼 커서를 올리면 아래를 축으로 살짝 확대된다
-                'relative aspect-video w-24 shrink-0 origin-bottom cursor-pointer overflow-hidden rounded-lg border bg-muted transition duration-200 hover:scale-115',
+                'relative aspect-video w-24 shrink-0 origin-bottom cursor-pointer overflow-hidden rounded-lg border bg-muted transition-[scale,opacity] duration-200 hover:scale-115',
                 i === activeIdx
                   ? 'ring-2 ring-[#f5a031] ring-offset-1'
                   : 'opacity-55 hover:opacity-100',
