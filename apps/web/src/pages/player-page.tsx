@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams, useRouter, useSearch } from '@tanstack/react-router'
+import { useParams, useRouter, useSearch } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowLeft02Icon,
   ArrowRight02Icon,
   Clock01Icon,
   Door01Icon,
+  Loading03Icon,
   PauseIcon,
   PlayIcon,
 } from '@hugeicons/core-free-icons'
@@ -219,15 +220,15 @@ export function PlayerPage() {
       className="relative h-full overflow-hidden bg-cover bg-center"
       style={{ backgroundImage: `url(${BG_URL})` }}
     >
-      {/* 로고 208×40 @ (80,58) */}
-      <Link
-        to="/weeks/$weekNo"
-        params={{ weekNo: '1' }}
-        title="홈으로"
-        className="absolute top-[58px] left-20"
+      {/* 로고 208×40 @ (80,58) — 전용 트리거가 없어 로고 클릭으로 타임라인을 여닫는다 */}
+      <button
+        type="button"
+        onClick={() => setListHidden((h) => !h)}
+        title={listHidden ? '타임라인 열기' : '타임라인 닫기'}
+        className="absolute top-[58px] left-20 cursor-pointer"
       >
         <img src="/logo-horizontal.svg" alt="북키톡키" className="h-10 w-52" />
-      </Link>
+      </button>
 
       {/* 제목 알약 880×92 @ (522,32) — #323843 / radius 48 */}
       <div className="absolute top-8 left-[522px] flex h-23 w-220 items-center justify-center rounded-[48px] bg-heading px-12">
@@ -283,8 +284,9 @@ export function PlayerPage() {
       <div className="absolute top-[174px] left-[237px] h-[834px] w-[1446px] rounded-[40px] bg-card p-6 shadow-[0_8px_20px_#aa937566]">
         <div className="relative size-full overflow-hidden rounded-3xl border border-[#e8e8f3] bg-muted">
           {current == null ? (
-            <div className="flex size-full items-center justify-center text-muted-foreground">
-              재생목록이 아직 준비되지 않았어요
+            <div className="flex size-full items-center justify-center gap-3 text-muted-foreground">
+              <HugeiconsIcon icon={Loading03Icon} className="size-6 animate-spin" />
+              준비중입니다.
             </div>
           ) : current.type === 'image' ? (
             // 본문 클릭으로 자동 진행 일시정지 ⇄ 재생 토글
@@ -351,8 +353,13 @@ export function PlayerPage() {
         </div>
       </div>
 
-        {total > 0 && !listHidden && (
-          <Timeline playlist={playlist} activeIdx={slideIdx} onSelect={setSlideIdx} />
+        {total > 0 && (
+          <Timeline
+            playlist={playlist}
+            activeIdx={slideIdx}
+            onSelect={setSlideIdx}
+            hidden={listHidden}
+          />
         )}
 
         {showInterval && (
@@ -393,26 +400,36 @@ function Timeline({
   playlist,
   activeIdx,
   onSelect,
+  hidden,
 }: {
   playlist: { type: 'image' | 'youtube' | 'music' | 'video'; value: string }[]
   activeIdx: number
   onSelect: (idx: number) => void
+  hidden: boolean
 }) {
   const stripRef = useRef<HTMLDivElement | null>(null)
 
-  // 활성 타일을 항상 시야 중앙 근처로
+  // 활성 타일을 항상 시야 중앙 근처로 (닫혀 있을 땐 스크롤을 건드리지 않는다)
   useEffect(() => {
+    if (hidden) return
     stripRef.current
       ?.querySelector(`[data-idx="${activeIdx}"]`)
       ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-  }, [activeIdx])
+  }, [activeIdx, hidden])
 
   return (
-    // 스펙 화면에는 없는 보조 UI — 공개했을 때만 카드 하단에 떠 있게 둔다
-    <footer className="absolute inset-x-0 bottom-4 z-20 px-6">
+    // 스펙 화면에는 없는 보조 UI — 맥 Dock 처럼 화면 아래에서 올라왔다 내려간다
+    <footer
+      className={cn(
+        'absolute inset-x-0 bottom-4 z-20 px-6 transition-[transform,opacity] duration-350 ease-[cubic-bezier(0.22,1.2,0.36,1)]',
+        hidden
+          ? 'pointer-events-none translate-y-[140%] opacity-0'
+          : 'translate-y-0 opacity-100',
+      )}
+    >
       <div
         ref={stripRef}
-        className="mx-auto flex max-w-[1400px] justify-center-safe gap-2.5 overflow-x-auto rounded-2xl bg-card/85 p-2 backdrop-blur-sm"
+        className="mx-auto flex max-w-[1400px] origin-bottom justify-center-safe gap-2.5 overflow-x-auto rounded-2xl bg-card/85 p-2 backdrop-blur-sm"
       >
         {playlist.map((item, i) => {
           const ytId = item.type === 'youtube' ? youtubeId(item.value) : null
@@ -424,7 +441,8 @@ function Timeline({
               onClick={() => onSelect(i)}
               title={`${i + 1}번째 슬라이드`}
               className={cn(
-                'relative aspect-video w-24 shrink-0 cursor-pointer overflow-hidden rounded-lg border bg-muted transition',
+                // Dock 아이콘처럼 커서를 올리면 아래를 축으로 살짝 확대된다
+                'relative aspect-video w-24 shrink-0 origin-bottom cursor-pointer overflow-hidden rounded-lg border bg-muted transition duration-200 hover:scale-115',
                 i === activeIdx
                   ? 'ring-2 ring-[#f5a031] ring-offset-1'
                   : 'opacity-55 hover:opacity-100',

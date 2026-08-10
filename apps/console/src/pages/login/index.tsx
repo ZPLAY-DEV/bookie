@@ -47,9 +47,10 @@ export function LoginPage() {
           }}
         >
           <LottieLogo size={128} />
-          <Typography.Title level={4} type="secondary" style={{ margin: 0 }}>
-            관리자 로그인
-          </Typography.Title>
+          {/* 폼 라벨(이메일/비밀번호)과 같은 크기 */}
+          <Typography.Text type="secondary" style={{ fontSize: 14, paddingTop: 8 }}>
+            늘봄 관리자로 로그인해 주세요
+          </Typography.Text>
         </div>
 
         <Form<LoginForm>
