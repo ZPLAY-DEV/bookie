@@ -602,7 +602,7 @@ function IntervalPopup({
             </p>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            slideshow 전환시간 간격을 조정합니다
+            슬라이드 전환시간 간격을 조정합니다.
           </p>
         </div>
         <div className="mt-9 flex items-center justify-center gap-8">
