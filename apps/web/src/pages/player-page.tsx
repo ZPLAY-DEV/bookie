@@ -203,6 +203,20 @@ export function PlayerPage() {
   // 유튜브 종료/닫기 → 다음 index로 재개
   const goNext = () => setSlideIdx((i) => Math.min(i + 1, Math.max(total - 1, 0)))
 
+  // 멈추면 덱이 올라오고, 다시 재생하면 내려간다
+  function togglePause() {
+    const next = !paused
+    setPaused(next)
+    setListHidden(!next)
+  }
+
+  // 덱 카드 선택 — 그 카드부터 재생을 재개하고 덱은 닫는다
+  function playFrom(idx: number) {
+    setSlideIdx(idx)
+    setPaused(false)
+    setListHidden(true)
+  }
+
   function toggleAudio() {
     const el = audioRef.current
     if (!el) return
@@ -293,7 +307,7 @@ export function PlayerPage() {
             <img
               src={current.value}
               alt={`슬라이드 ${slideIdx + 1}`}
-              onClick={() => setPaused((p) => !p)}
+              onClick={togglePause}
               className="size-full cursor-pointer object-contain"
             />
           ) : current.type === 'youtube' && videoId ? (
@@ -350,6 +364,13 @@ export function PlayerPage() {
               </span>
             </>
           )}
+
+          {/* 몇 장 중 몇 번째인지 — 잠깐 멈춤 배지와 같은 모양으로 우측 하단에 */}
+          {total > 0 && (
+            <span className="absolute right-4 bottom-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white tabular-nums">
+              {slideIdx + 1}/{total}
+            </span>
+          )}
         </div>
       </div>
 
@@ -357,7 +378,7 @@ export function PlayerPage() {
           <Timeline
             playlist={playlist}
             activeIdx={slideIdx}
-            onSelect={setSlideIdx}
+            onSelect={playFrom}
             hidden={listHidden}
           />
         )}
@@ -381,7 +402,6 @@ export function PlayerPage() {
                 router.history.back()
                 return
               }
-              setListHidden(action === 'hideList')
               setShowExitConfirm(false)
             }}
           />
@@ -409,12 +429,17 @@ function Timeline({
 }) {
   const stripRef = useRef<HTMLDivElement | null>(null)
 
-  // 활성 타일을 항상 시야 중앙 근처로 (닫혀 있을 땐 스크롤을 건드리지 않는다)
+  // 활성 타일을 스트립 가운데로. scrollIntoView 는 overflow-hidden 인 캔버스까지 끌어올려
+  // 타임라인이 올라오는 순간 화면이 튀므로, 스트립 자체의 scrollLeft 만 움직인다.
   useEffect(() => {
     if (hidden) return
-    stripRef.current
-      ?.querySelector(`[data-idx="${activeIdx}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    const strip = stripRef.current
+    const tile = strip?.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`)
+    if (!strip || !tile) return
+    strip.scrollTo({
+      left: tile.offsetLeft - (strip.clientWidth - tile.clientWidth) / 2,
+      behavior: 'smooth',
+    })
   }, [activeIdx, hidden])
 
   return (
@@ -423,15 +448,17 @@ function Timeline({
       className={cn(
         // Tailwind v4 의 translate-y-* 는 transform 이 아니라 translate 프로퍼티를 쓴다.
         // transition 대상도 translate 로 잡아야 실제로 밀려 올라온다 (아니면 위치가 즉시 점프)
-        'absolute inset-x-0 bottom-4 z-20 px-6 transition-[translate,opacity] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)]',
+        // 위 슬라이드 카드와 같은 폭·좌표(1446 @ x=237)로 두고, 아래는 캔버스 경계선에 딱 붙인다.
+        // 높이 72 = 카드 하단(1008) ~ 캔버스 하단(1080) — 덱 윗선이 카드 밑선과 만난다.
+        'absolute bottom-0 left-[237px] z-20 h-18 w-[1446px] transition-[translate,opacity] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)]',
         hidden
-          ? 'pointer-events-none translate-y-[calc(100%+2rem)] opacity-0'
+          ? 'pointer-events-none translate-y-full opacity-0'
           : 'translate-y-0 opacity-100',
       )}
     >
       <div
         ref={stripRef}
-        className="mx-auto flex max-w-[1400px] origin-bottom justify-center-safe gap-2.5 overflow-x-auto rounded-2xl bg-card/85 p-2 backdrop-blur-sm"
+        className="flex size-full items-center justify-center-safe gap-2.5 overflow-x-auto rounded-t-2xl bg-card/85 px-2 backdrop-blur-sm"
       >
         {playlist.map((item, i) => {
           const ytId = item.type === 'youtube' ? youtubeId(item.value) : null
@@ -443,8 +470,8 @@ function Timeline({
               onClick={() => onSelect(i)}
               title={`${i + 1}번째 슬라이드`}
               className={cn(
-                // Dock 아이콘처럼 커서를 올리면 아래를 축으로 살짝 확대된다
-                'relative aspect-video w-24 shrink-0 origin-bottom cursor-pointer overflow-hidden rounded-lg border bg-muted transition-[scale,opacity] duration-200 hover:scale-115',
+                // 덱 높이가 72px 로 고정돼 확대하면 잘리므로, 확대 대신 불투명도로만 반응한다
+                'relative aspect-video w-24 shrink-0 cursor-pointer overflow-hidden rounded-lg border bg-muted transition-opacity duration-200',
                 i === activeIdx
                   ? 'ring-2 ring-[#f5a031] ring-offset-1'
                   : 'opacity-55 hover:opacity-100',
@@ -487,6 +514,15 @@ function Timeline({
   )
 }
 
+// 두 팝업(전환 간격 / 수업 마치기)이 공유하는 알약 버튼 —
+// 가운데에 살짝 엇갈려 겹쳐 있다가 0.5초 뒤 좌우로 펼쳐진다
+const POPUP_BTN =
+  'absolute top-0 left-1/2 h-13 w-52 cursor-pointer rounded-full font-bold shadow-lg transition-[translate,rotate,scale] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] hover:scale-105'
+const POPUP_BTN_STACK_L = '-rotate-6 -translate-x-[57%]'
+const POPUP_BTN_STACK_R = 'z-10 rotate-6 -translate-x-[43%]'
+const POPUP_BTN_SPREAD_L = '-translate-x-[104%] rotate-0'
+const POPUP_BTN_SPREAD_R = 'translate-x-[4%] rotate-0'
+
 // 슬라이드 전환 간격 조정 팝업 — 초 단위 스테퍼(1~60), 확인해야 적용된다
 function IntervalPopup({
   initial,
@@ -498,50 +534,74 @@ function IntervalPopup({
   onClose: () => void
 }) {
   const [value, setValue] = useState(initial)
+  // 야옹이 팝업과 같은 연출 — 뜬 뒤 0.5초에 겹쳐 있던 버튼이 좌우로 펼쳐진다
+  const [spread, setSpread] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setSpread(true), 500)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <div
       className="absolute inset-0 z-50 flex items-center justify-center bg-heading/40 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-3xl border bg-card p-8 text-center shadow-2xl"
+        className="w-full max-w-lg rounded-[32px] border bg-card p-12 text-center shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-xl font-extrabold text-heading">슬라이드 전환 간격</p>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          slideshow 전환시간 간격을 조정합니다
-        </p>
-        <div className="mt-7 flex items-center justify-center gap-6">
+        {/* 야옹이 팝업과 같은 머리 구성 — 아바타 + 말풍선(22px ExtraBold) + 보조 문구 */}
+        <div className="flex flex-col items-center">
+          <img
+            src="/images/avatar.png"
+            alt=""
+            className="size-20 rounded-full object-cover"
+          />
+          <div className="relative mt-4 rounded-2xl bg-secondary px-6 py-3">
+            <span className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-secondary" />
+            <p className="text-[22px] font-extrabold text-heading">
+              야옹... 몇 초마다 넘길까요? 🐾
+            </p>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            slideshow 전환시간 간격을 조정합니다
+          </p>
+        </div>
+        <div className="mt-9 flex items-center justify-center gap-8">
           <button
             type="button"
             onClick={() => setValue((v) => Math.max(1, v - 1))}
-            className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-secondary text-2xl font-bold text-heading transition hover:bg-secondary/70"
+            className="flex size-14 cursor-pointer items-center justify-center rounded-full bg-secondary text-3xl font-bold text-heading transition hover:bg-secondary/70"
           >
             −
           </button>
-          <span className="w-24 text-5xl font-extrabold text-heading tabular-nums">
+          <span className="w-32 text-6xl font-extrabold text-heading tabular-nums">
             {value}
-            <span className="ml-1 text-lg font-bold">초</span>
+            <span className="ml-1 text-xl font-bold">초</span>
           </span>
           <button
             type="button"
             onClick={() => setValue((v) => Math.min(60, v + 1))}
-            className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-secondary text-2xl font-bold text-heading transition hover:bg-secondary/70"
+            className="flex size-14 cursor-pointer items-center justify-center rounded-full bg-secondary text-3xl font-bold text-heading transition hover:bg-secondary/70"
           >
             +
           </button>
         </div>
-        <div className="mt-8 flex gap-3">
+        <div className="relative mt-10 h-13">
           <Button
             onClick={() => onConfirm(value)}
-            className="h-11 flex-1 rounded-full font-bold"
+            className={cn(POPUP_BTN, spread ? POPUP_BTN_SPREAD_L : POPUP_BTN_STACK_L)}
           >
             확인
           </Button>
           <Button
             variant="outline"
             onClick={onClose}
-            className="h-11 flex-1 rounded-full font-bold"
+            className={cn(
+              POPUP_BTN,
+              'bg-card',
+              spread ? POPUP_BTN_SPREAD_R : POPUP_BTN_STACK_R,
+            )}
           >
             취소
           </Button>
@@ -551,16 +611,10 @@ function IntervalPopup({
   )
 }
 
-type ExitAction = 'hideList' | 'exit' | 'showList'
+type ExitAction = 'exit' | 'continue'
 
-const EXIT_REASONS: { emoji: string; label: string; action: ExitAction }[] = [
-  { emoji: '🫣', label: '타임라인 숨김', action: 'hideList' },
-  { emoji: '🥺', label: '그만할래', action: 'exit' },
-  { emoji: '😎', label: '타임라인 공개', action: 'showList' },
-]
-
-// 야옹이 메뉴 — 타임라인 숨김(슬라이드 확대) / 그만할래(나가기) / 타임라인 공개.
-// 카드 3장이 겹쳐 있다가 hover 시 부채꼴로 펼쳐진다 (magicui feature-card 스타일 연출)
+// 야옹이 메뉴 — 확인(수업 종료) / 취소.
+// 카드 2장이 겹쳐 있다가 팝업이 뜨고 0.5초 뒤 좌우로 펼쳐진다.
 function ExitConfirm({
   onAction,
   onClose,
@@ -568,13 +622,20 @@ function ExitConfirm({
   onAction: (action: ExitAction) => void
   onClose: () => void
 }) {
+  const [spread, setSpread] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setSpread(true), 500)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <div
       className="absolute inset-0 z-50 flex items-center justify-center bg-heading/40 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-3xl border bg-card p-10 text-center shadow-2xl"
+        className="w-full max-w-lg rounded-[32px] border bg-card p-12 text-center shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col items-center">
@@ -586,45 +647,31 @@ function ExitConfirm({
           <div className="relative mt-4 rounded-2xl bg-secondary px-6 py-3">
             <span className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-secondary" />
             <p className="text-[22px] font-extrabold text-heading">
-              야옹...? 왜 그러시죠? 🐾
+              야옹... 수업을 마칠까요? 🐾
             </p>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            원하는 걸 하나 골라주세요 (마우스를 올려보세요)
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">닝겐, 원하는 걸 고르시라.</p>
         </div>
 
-        <div className="group relative mx-auto mt-8 h-44 max-w-2xl">
-          {EXIT_REASONS.map((reason, i) => (
-            <button
-              key={reason.label}
-              type="button"
-              onClick={() => onAction(reason.action)}
-              className={cn(
-                'absolute top-0 left-1/2 flex h-40 w-52 -translate-x-1/2 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border bg-card shadow-lg transition-all duration-250 ease-out hover:!scale-105 hover:border-accent hover:shadow-xl',
-                // 기본: 살짝 어긋나게 겹친 카드 더미
-                i === 0 && '-rotate-8 -translate-x-[62%]',
-                i === 1 && 'z-10 -translate-y-1',
-                i === 2 && 'rotate-8 -translate-x-[38%]',
-                // hover: 동등한 3개 옵션으로 펼침
-                i === 0 && 'group-hover:-translate-x-[160%] group-hover:rotate-0',
-                i === 1 && 'group-hover:-translate-y-0',
-                i === 2 && 'group-hover:translate-x-[60%] group-hover:rotate-0',
-              )}
-            >
-              <span className="text-4xl">{reason.emoji}</span>
-              <span className="text-[16px] font-bold text-heading">{reason.label}</span>
-            </button>
-          ))}
+        <div className="relative mt-10 h-13">
+          <Button
+            onClick={() => onAction('exit')}
+            className={cn(POPUP_BTN, spread ? POPUP_BTN_SPREAD_L : POPUP_BTN_STACK_L)}
+          >
+            확인
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onAction('continue')}
+            className={cn(
+              POPUP_BTN,
+              'bg-card',
+              spread ? POPUP_BTN_SPREAD_R : POPUP_BTN_STACK_R,
+            )}
+          >
+            취소
+          </Button>
         </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 cursor-pointer text-sm font-semibold text-muted-foreground underline underline-offset-3 hover:text-heading"
-        >
-          취소
-        </button>
       </div>
     </div>
   )
