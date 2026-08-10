@@ -102,14 +102,21 @@ export function LoginPage() {
               onClick={() => setShowPassword((s) => !s)}
               title={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
               style={{
+                // 아이콘만 두면 클릭 영역이 14×14 라 잘 안 눌린다 — 32×32 히트 영역을 준다
                 position: "absolute",
-                top: 43,
-                right: 12,
+                top: 34,
+                right: 6,
+                width: 32,
+                height: 32,
                 display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 padding: 0,
                 border: "none",
+                borderRadius: 6,
                 background: "none",
                 cursor: "pointer",
+                fontSize: 16,
                 color: "rgba(0,0,0,0.45)",
               }}
             >
