@@ -116,6 +116,16 @@ body {
   html {
     @apply font-sans;}}
 
+/* 플레이어 타이머 알약 — 전환 간격만큼 테두리가 한 바퀴 지워진다 (pathLength=100 정규화) */
+@keyframes timer-ring {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 100;
+  }
+}
+
 /* 로그인 로고 말풍선 — 1초 동안 fade in → 유지 → fade out */
 @keyframes poke-bubble {
   0% {

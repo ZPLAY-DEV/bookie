@@ -197,6 +197,9 @@ export function PlayerPage() {
     return () => clearTimeout(t)
   }, [slideIdx, current?.type, canNext, total, paused, intervalSec])
 
+  // 자동 넘김이 실제로 돌고 있는 구간에서만 타이머 테두리를 카운트다운시킨다
+  const autoAdvancing = current?.type === 'image' && canNext
+
   const videoId = current?.type === 'youtube' ? youtubeId(current.value) : null
   const audioUrl = current?.type === 'music' ? current.value : null
 
@@ -244,20 +247,55 @@ export function PlayerPage() {
         <img src="/logo-horizontal.svg" alt="북키톡키" className="h-10 w-52" />
       </button>
 
-      {/* 제목 알약 880×92 @ (522,32) — #323843 / radius 48 */}
-      <div className="absolute top-8 left-[522px] flex h-23 w-220 items-center justify-center rounded-[48px] bg-heading px-12">
+      {/* 제목 알약 880×92 @ (522,32) — #323843 / radius 48. 화면 클릭과 같은 동작(멈춤 ⇄ 재생) */}
+      <button
+        type="button"
+        onClick={togglePause}
+        title={paused ? '다시 재생' : '잠깐 멈춤'}
+        className="absolute top-8 left-[522px] flex h-23 w-220 cursor-pointer items-center justify-center rounded-[48px] bg-heading px-12"
+      >
         <h1 className="truncate text-[36px] leading-10 font-extrabold text-white">
           {lesson?.title ?? ''}
         </h1>
-      </div>
+      </button>
 
       {/* 경과 시간 146×56 @ (1504,50) — 클릭하면 전환 간격 조정 */}
       <button
         type="button"
         onClick={() => setShowInterval(true)}
         title={`슬라이드 전환 간격 ${intervalSec}초 — 눌러서 조정`}
-        className="absolute top-[50px] left-[1504px] flex h-14 w-[146px] cursor-pointer items-center justify-center gap-2 rounded-[32px] border-2 border-muted-foreground bg-background text-heading"
+        className="absolute top-[50px] left-[1504px] flex h-14 w-[146px] cursor-pointer items-center justify-center gap-2 rounded-[32px] bg-background text-heading"
       >
+        {/* 테두리는 SVG 로 그려서, 전환 간격 동안 한 바퀴 지워지는 카운트다운으로 쓴다.
+            pathLength=100 이라 둘레 길이 계산 없이 0→100 으로 애니메이션한다. */}
+        <svg
+          viewBox="0 0 146 56"
+          fill="none"
+          className="pointer-events-none absolute inset-0 size-full"
+        >
+          <rect
+            // 멈췄다 다시 재생하면 자동 넘김 타이머가 처음부터 다시 시작하므로
+            // (setTimeout 이 재생성된다) 테두리도 paused 가 바뀔 때마다 리셋한다
+            key={`${slideIdx}-${intervalSec}-${paused}`}
+            x="1"
+            y="1"
+            width="144"
+            height="54"
+            rx="27"
+            pathLength={100}
+            stroke="#878b94"
+            strokeWidth="2"
+            strokeDasharray="100"
+            style={
+              autoAdvancing
+                ? {
+                    animation: `timer-ring ${intervalSec}s linear forwards`,
+                    animationPlayState: paused ? 'paused' : 'running',
+                  }
+                : undefined
+            }
+          />
+        </svg>
         <HugeiconsIcon icon={Clock01Icon} className="size-5.5" />
         <span className="text-[16px] leading-[18px] font-extrabold tabular-nums">
           {formatElapsed(elapsed)}
