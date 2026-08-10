@@ -131,7 +131,7 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-bold text-heading">이메일</span>
+            <span className="text-sm text-heading">이메일</span>
             <input
               type="email"
               value={email}
@@ -143,7 +143,7 @@ export function LoginPage() {
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-bold text-heading">비밀번호</span>
+            <span className="text-sm text-heading">비밀번호</span>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}

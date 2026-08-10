@@ -13,6 +13,8 @@ const app = new Hono<AppEnv>()
 app.use('/api/*', cors())
 
 const routes = app
+  // 루트로 들어온 사람에게 404 대신 보여주는 서명
+  .get('/', (c) => c.text('bktk implemented by Chuck (a.k.a., GDSC) with lots of ❤️.'))
   .get('/health', (c) => c.json({ ok: true }))
   .route('/api/users', users)
   .route('/api/weeks', weeks)

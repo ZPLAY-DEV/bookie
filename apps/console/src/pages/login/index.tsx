@@ -18,6 +18,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
+    // web 로그인과 같은 대비 — 회색 바탕(#f7f7f5) 위에 흰 카드
     <div
       style={{
         minHeight: "100dvh",
@@ -25,9 +26,18 @@ export function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
+        background: "#f7f7f5",
       }}
     >
-      <Card style={{ width: 400 }} styles={{ body: { padding: 32 } }}>
+      <Card
+        style={{
+          width: 400,
+          background: "#fff",
+          border: "none",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        }}
+        styles={{ body: { padding: 32 } }}
+      >
         <div
           style={{
             display: "flex",
@@ -103,7 +113,8 @@ export function LoginPage() {
                 color: "rgba(0,0,0,0.45)",
               }}
             >
-              {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+              {/* web 로그인과 같은 방향 — 가려진 상태에서는 '보기'를 뜻하는 뜬 눈 */}
+              {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
             </button>
           </div>
           <Form.Item name="remember" valuePropName="checked">
