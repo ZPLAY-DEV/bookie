@@ -8,7 +8,8 @@ import {
   useSelect,
   useTable,
 } from "@refinedev/antd";
-import { Form, Input, Select, Space, Table, Tag } from "antd";
+import { Avatar, Form, Input, Select, Space, Table, Tag } from "antd";
+import type { User } from "../users";
 
 type Association = {
   id: number;
@@ -31,6 +32,16 @@ const useSchoolSelect = () =>
     pagination: { pageSize: 100 },
   });
 
+// 연결된 사용자를 아바타+이름으로 보여주기 위한 조회 (users 확장 뷰 = auth 이메일 포함)
+const useUserSelect = () =>
+  useSelect<User>({
+    resource: "users",
+    optionLabel: "name",
+    optionValue: "id",
+    sorters: [{ field: "name", order: "asc" }],
+    pagination: { pageSize: 100 },
+  });
+
 // 상태: invited(사전 등록, 로그인 대기) → active(강사 로그인으로 연결됨)
 const STATUS_TAGS: Record<string, { color: string; label: string }> = {
   invited: { color: "orange", label: "등록됨(대기)" },
@@ -44,6 +55,8 @@ export const AssociationList = () => {
   const { query: schoolQuery } = useSchoolSelect();
   const schoolName = (schoolId: number) =>
     schoolQuery.data?.data.find((s) => s.id === schoolId)?.name ?? schoolId;
+  const { query: userQuery } = useUserSelect();
+  const users = userQuery.data?.data ?? [];
 
   return (
     <List>
@@ -68,9 +81,21 @@ export const AssociationList = () => {
         <Table.Column
           dataIndex="userId"
           title="연결된 사용자"
-          render={(userId: string | null) =>
-            userId ? `${userId.slice(0, 8)}…` : "-"
-          }
+          render={(userId: string | null) => {
+            if (!userId) return "-";
+            // 목록에 없으면(100건 초과 등) uuid 앞자리로 폴백
+            const user = users.find((u) => u.id === userId);
+            if (!user) return `${userId.slice(0, 8)}…`;
+            const label = user.name ?? user.email ?? `${userId.slice(0, 8)}…`;
+            return (
+              <Space>
+                <Avatar src={user.profileImageUrl} size="small">
+                  {label[0]}
+                </Avatar>
+                {label}
+              </Space>
+            );
+          }}
         />
         <Table.Column<Association>
           title="동작"

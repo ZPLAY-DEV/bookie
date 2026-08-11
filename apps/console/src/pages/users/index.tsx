@@ -2,7 +2,7 @@ import { List, useTable } from "@refinedev/antd";
 import { Avatar, Select, Space, Table, Typography } from "antd";
 import { InlineEditCell } from "../../components/inline-edit-cell";
 
-type User = {
+export type User = {
   id: string; // Supabase auth user id (uuid)
   name: string | null;
   role: string; // pending | teacher | admin
