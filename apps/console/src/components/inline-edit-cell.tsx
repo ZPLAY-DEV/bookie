@@ -16,7 +16,7 @@ export const InlineEditCell = ({
   suffix,
 }: {
   resource: string;
-  id: number;
+  id: number | string; // users는 uuid
   field: string;
   value: string | number | null;
   type?: "text" | "number" | "select";

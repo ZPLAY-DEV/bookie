@@ -1,19 +1,51 @@
-import { and, eq, or, type SQL } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNull, or, type SQL } from 'drizzle-orm'
 import type { Database } from '../db'
 import { adminUsers, associations, schools, users } from '../db/schema'
+import type { ListParams } from './lesson.service'
 
 export async function getUser(db: Database, userId: string) {
   const [user] = await db.select().from(users).where(eq(users.id, userId))
   return user ?? null
 }
 
-// admin_users 뷰 조회 — role=admin인 사용자만 행이 존재한다
-export async function getAdminUser(db: Database, userId: string) {
-  const [admin] = await db
-    .select()
-    .from(adminUsers)
-    .where(eq(adminUsers.id, userId))
-  return admin ?? null
+// 콘솔 사용자 목록 — admin_users 확장 뷰(users + auth.users의 email·phone)
+const userSortColumns = {
+  createdAt: adminUsers.createdAt,
+  name: adminUsers.name,
+  role: adminUsers.role,
+} as const
+
+export type UserSortField = keyof typeof userSortColumns
+
+export const USER_ROLES = ['pending', 'teacher', 'admin'] as const
+export type UserRole = (typeof USER_ROLES)[number]
+
+export async function listUsers(
+  db: Database,
+  params: ListParams & { sortField: UserSortField; role?: UserRole },
+) {
+  const where = params.role ? eq(adminUsers.role, params.role) : undefined
+  const order = params.sortOrder === 'desc' ? desc : asc
+  const [data, [{ total }]] = await Promise.all([
+    db
+      .select()
+      .from(adminUsers)
+      .where(where)
+      .orderBy(order(userSortColumns[params.sortField]))
+      .limit(params.pageSize)
+      .offset((params.page - 1) * params.pageSize),
+    db.select({ total: count() }).from(adminUsers).where(where),
+  ])
+  return { data, total }
+}
+
+export async function updateUserRole(db: Database, id: string, role: UserRole) {
+  const [user] = await db
+    .update(users)
+    .set({ role })
+    .where(eq(users.id, id))
+    .returning()
+  return user ?? null
 }
 
 // 사전 등록(invited)된 associations를 로그인한 사용자의 이메일/전화와 매칭해
@@ -32,7 +64,9 @@ export async function claimAssociations(
   const claimed = await db
     .update(associations)
     .set({ userId, status: 'active' })
-    .where(and(eq(associations.status, 'invited'), or(...contactMatches)))
+    // 연결 안 된 행이 대상 — 사전 등록(invited)뿐 아니라, 탈퇴로 userId가
+    // 끊긴(ON DELETE SET NULL) 행도 재가입 시 다시 연결된다
+    .where(and(isNull(associations.userId), or(...contactMatches)))
     .returning()
 
   if (claimed.length > 0) {

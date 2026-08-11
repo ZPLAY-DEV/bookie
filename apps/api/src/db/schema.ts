@@ -58,15 +58,19 @@ export const associations = pgTable('associations', {
     .notNull(),
 })
 
-// users(role=admin) + auth.users.email 조인 뷰 — 콘솔 관리자 검증에 사용.
+// users + auth.users의 email·phone을 붙인 1:1 확장 뷰 — 콘솔 사용자 목록의
+// 데이터 소스. 필터가 없으므로 users와 행 수가 같다 (LEFT JOIN — 이메일
+// 미제공 계정도 남는다). 관리자 판정은 이 뷰가 아니라 users.role이 담당한다.
 // auth 스키마를 참조하므로 SQL 마이그레이션으로 직접 생성한다 (.existing()).
 export const adminUsers = pgView('admin_users', {
   id: uuid('id').notNull(),
-  email: text('email'),
   name: text('name'),
   role: text('role').notNull(),
   profileImageUrl: text('profile_image_url'),
+  socialUserId: text('social_user_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  email: text('email'),
+  phone: text('phone'),
 }).existing()
 
 // 주차 (1주차 ~ 12주차, 주 테마)
@@ -106,7 +110,7 @@ export const lessons = pgTable('lessons', {
     .references(() => weeks.id),
   weekIndex: smallint('week_index').notNull().default(1), // 주차 (weeks.week_no 비정규화 — 슬라이드 경로 w{주차}d{일차} 구성용)
   dayIndex: smallint('day_index').notNull().default(1), // 일차 1~5 = 월~금
-  category: text('category').notNull(), // 책놀이 | 미술 | 음악 | 신체 | 사회정서
+  category: text('category').notNull(), // 책톡 | 그림톡 | 소리톡 | 몸톡 | 마음톡
   title: text('title').notNull(), // 차시명
   description: text('description'), // 수업 설명
   durationMin: integer('duration_min'), // 시간(분), 예: 80

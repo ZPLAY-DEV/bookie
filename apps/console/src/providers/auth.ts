@@ -3,7 +3,7 @@ import { supabaseClient } from "./supabase-client";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
 
-// admin_users 뷰 기반 관리자 검증 — API의 /users/me가 뷰를 조회해 isAdmin을 내려준다
+// 관리자 검증 — API의 /users/me가 users.role을 보고 isAdmin을 내려준다
 async function verifyAdmin(token: string): Promise<boolean> {
   try {
     const res = await fetch(`${API_URL}/api/users/me`, {
@@ -60,7 +60,7 @@ const authProvider: AuthProvider = {
       }
 
       if (data?.user) {
-        // admin_users 뷰에 없는 계정(role != admin)은 콘솔 접근 불가
+        // role != admin 계정은 콘솔 접근 불가
         const admin = await verifyAdmin(data.session?.access_token ?? "");
         if (!admin) {
           await supabaseClient.auth.signOut();
@@ -229,7 +229,7 @@ const authProvider: AuthProvider = {
         };
       }
 
-      // 세션이 있어도 관리자가 아니면 차단 (admin_users 뷰 검증)
+      // 세션이 있어도 관리자가 아니면 차단 (users.role 검증)
       const admin = await verifyAdmin(session.access_token);
       if (!admin) {
         await supabaseClient.auth.signOut();

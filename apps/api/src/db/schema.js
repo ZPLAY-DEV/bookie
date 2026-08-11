@@ -60,7 +60,7 @@ export const lessons = pgTable('lessons', {
         .notNull()
         .references(() => weeks.id),
     weekday: smallint('weekday').notNull(), // 1=월 ... 5=금
-    category: text('category').notNull(), // 책놀이 | 미술 | 음악 | 신체 | 사회정서
+    category: text('category').notNull(), // 책톡 | 그림톡 | 소리톡 | 몸톡 | 마음톡
     title: text('title').notNull(), // 예: 시원한 말, 따듯한 말
     description: text('description'),
     imageUrl: text('image_url'),

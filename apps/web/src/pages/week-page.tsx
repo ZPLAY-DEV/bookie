@@ -76,6 +76,12 @@ export function WeekPage() {
     )
   }
 
+  // 이메일은 관리자가 사전 통보 명단과 대조하는 식별 키 — 없으면 승인 자체가
+  // 성립하지 않으므로 진입을 막고 카카오 재동의를 안내한다
+  if (!me.hasEmail) {
+    return <EmailRequired onLogout={handleLogout} />
+  }
+
   // 사전 등록된 학교가 없으면 기본 학교(제트초등학교) 합류를 안내
   if (!approved) {
     return <DefaultSchoolConfirm onLogout={handleLogout} />
@@ -125,7 +131,7 @@ export function WeekPage() {
                             ? 'font-extrabold text-white'
                             : 'text-heading hover:bg-muted',
                         )}
-                        // 활성 요일은 해당 요일 과목의 색으로 (월=책놀이 노랑 …)
+                        // 활성 요일은 해당 요일 과목의 색으로 (월=책톡 노랑 …)
                         style={
                           active
                             ? { backgroundColor: CATEGORY_COLORS[DAY_CATEGORY[i]] }
@@ -251,6 +257,33 @@ function WeekMainSkeleton() {
 }
 
 // 사전 등록된 학교가 없는 사용자 — 확인하면 기본 학교(제트초등학교) 강사로 합류
+// 카카오 이메일 미제공 계정 게이트. 로그아웃 후 재로그인하면 동의 화면을 다시
+// 거친다 — 카카오계정에 이메일이 아예 없으면 먼저 등록해야 한다.
+function EmailRequired({ onLogout }: { onLogout: () => void }) {
+  return (
+    <div className="flex h-full items-center justify-center p-7">
+      <div className="w-full max-w-105 rounded-3xl border bg-card p-10 text-center shadow-sm">
+        <LottieLogo className="mx-auto size-24" />
+        <p className="mt-4 text-[15px] leading-relaxed text-heading">
+          <strong>이메일 제공에 동의</strong>해야
+          <br />
+          이용할 수 있어요.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          선생님 확인에 이메일이 필요합니다. 다시 로그인해 카카오 동의 화면에서
+          이메일 제공을 허용해 주세요.
+        </p>
+        <Button
+          onClick={onLogout}
+          className="mt-7 h-12 w-full rounded-full font-bold shadow-lg shadow-primary/30 hover:bg-primary/90"
+        >
+          다시 로그인
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function DefaultSchoolConfirm({ onLogout }: { onLogout: () => void }) {
   const queryClient = useQueryClient()
   const join = useMutation({

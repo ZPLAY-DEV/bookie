@@ -398,7 +398,7 @@ export function PlayerPage() {
                 </span>
               </span>
               <span className="absolute bottom-4 left-4 rounded-full bg-black/40 px-3 py-1 text-sm font-bold text-white">
-                ⏸ 잠깐 멈춤 — 화면을 클릭하면 다시 재생돼요
+                ⏸ 잠깐 멈춤 — 화면이나 썸네일을 클릭하면 다시 재생돼요
               </span>
             </>
           )}

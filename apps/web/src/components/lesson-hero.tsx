@@ -27,7 +27,7 @@ const ACTIVITY_NUMBERS = ['①', '②', '③', '④']
 
 export function LessonHero({ lesson }: { lesson: Lesson }) {
   const flow = lesson.flow
-  const accent = CATEGORY_COLORS[lesson.category] ?? CATEGORY_COLORS['책놀이']
+  const accent = CATEGORY_COLORS[lesson.category] ?? CATEGORY_COLORS['책톡']
 
   return (
     <section className="flex h-135 gap-8 rounded-[32px] bg-card">

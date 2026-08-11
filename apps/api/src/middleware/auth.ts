@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory'
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from 'jose'
 import { createDb } from '../db'
 import type { AppEnv } from '../env'
-import { getAdminUser, getUser } from '../services/user.service'
+import { getUser } from '../services/user.service'
 
 // Supabase Auth(GoTrue)는 비대칭 키(ES256)로 서명하고 공개키를 JWKS로 노출한다.
 // HS256은 레거시 JWT secret 프로젝트용 폴백. (motionfit과 동일한 방식)
@@ -48,9 +48,14 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   await next()
 })
 
-// 승인된 사용자(teacher/admin)만 통과 — requireAuth 뒤에 체이닝해서 사용
+// 승인된 사용자(teacher/admin)만 통과 — requireAuth 뒤에 체이닝해서 사용.
+// 이메일은 관리자가 사전 통보 명단과 대조하는 식별 키라 필수 — 웹 앱의 게이트
+// 화면이 프론트에서 막고, 여기서 우회를 막는다.
 export const requireMember = createMiddleware<AppEnv>(async (c, next) => {
   const authUser = c.get('user')
+  if (!authUser.email) {
+    return c.json({ error: '이메일 제공에 동의해야 이용할 수 있습니다' }, 403)
+  }
   const db = createDb(c.env.DATABASE_URL)
   const user = await getUser(db, authUser.id)
   if (!user || (user.role !== 'teacher' && user.role !== 'admin')) {
@@ -59,12 +64,12 @@ export const requireMember = createMiddleware<AppEnv>(async (c, next) => {
   await next()
 })
 
-// 관리자(admin_users 뷰)만 통과 — requireAuth 뒤에 체이닝해서 사용
+// 관리자(users.role='admin')만 통과 — requireAuth 뒤에 체이닝해서 사용
 export const requireAdmin = createMiddleware<AppEnv>(async (c, next) => {
   const authUser = c.get('user')
   const db = createDb(c.env.DATABASE_URL)
-  const admin = await getAdminUser(db, authUser.id)
-  if (!admin) {
+  const user = await getUser(db, authUser.id)
+  if (user?.role !== 'admin') {
     return c.json({ error: '관리자 권한이 필요합니다' }, 403)
   }
   await next()

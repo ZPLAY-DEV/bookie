@@ -92,6 +92,20 @@
       "when": 1785920890622,
       "tag": "0012_lessons-week-index",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785920891622,
+      "tag": "0013_admin-users-extension-view",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785920892622,
+      "tag": "0014_users-auth-fk",
+      "breakpoints": true
     }
   ]
 }

@@ -47,6 +47,7 @@ import {
   AssociationList,
 } from "./pages/associations";
 import { LoginPage } from "./pages/login";
+import { UserList } from "./pages/users";
 
 function App() {
   return (
@@ -91,6 +92,11 @@ function App() {
                     create: "/associations/create",
                     edit: "/associations/edit/:id",
                     meta: { label: "강사 소속" },
+                  },
+                  {
+                    name: "users",
+                    list: "/users",
+                    meta: { label: "사용자" },
                   },
                 ]}
                 options={{
@@ -160,6 +166,9 @@ function App() {
                       <Route index element={<AssociationList />} />
                       <Route path="create" element={<AssociationCreate />} />
                       <Route path="edit/:id" element={<AssociationEdit />} />
+                    </Route>
+                    <Route path="/users">
+                      <Route index element={<UserList />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>

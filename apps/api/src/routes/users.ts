@@ -1,14 +1,24 @@
+import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { createDb } from '../db'
 import type { AppEnv } from '../env'
-import { requireAuth } from '../middleware/auth'
+import { listQuerySchema } from '../lib/query'
+import { requireAdmin, requireAuth } from '../middleware/auth'
 import {
+  USER_ROLES,
   claimAssociations,
-  getAdminUser,
   getUser,
   joinDefaultSchool,
   listUserAssociations,
+  listUsers,
+  updateUserRole,
 } from '../services/user.service'
+
+const userListQuerySchema = listQuerySchema(
+  ['createdAt', 'name', 'role'],
+  'createdAt',
+).extend({ role: z.enum(USER_ROLES).optional() })
 
 export const users = new Hono<AppEnv>()
   // 사전 등록이 없는 사용자가 확인을 거쳐 기본 학교(제트초등학교)로 합류
@@ -31,18 +41,46 @@ export const users = new Hono<AppEnv>()
   // 다음 방문 때 연결되도록 매번 시도한다 (매칭 없으면 no-op)
   await claimAssociations(db, authUser.id, authUser.email, authUser.phone)
 
-  const [user, admin, associations] = await Promise.all([
+  const [user, associations] = await Promise.all([
     getUser(db, authUser.id),
-    getAdminUser(db, authUser.id),
     listUserAssociations(db, authUser.id),
   ])
-  // email은 JWT 클레임, admin 행의 email은 auth.users 원본 (admin_users 뷰 경유)
   return c.json({
     ...authUser,
     user,
-    admin,
-    isAdmin: admin !== null,
+    isAdmin: user?.role === 'admin',
     isApproved: user?.role === 'teacher' || user?.role === 'admin',
+    // 이메일 미제공 계정은 웹 앱이 게이트 화면으로 막는다 (승인 판단 불가)
+    hasEmail: Boolean(authUser.email),
     associations,
   })
 })
+  // --- 콘솔(관리자) 전용 ---
+  .get(
+    '/',
+    requireAuth,
+    requireAdmin,
+    zValidator('query', userListQuerySchema),
+    async (c) => {
+      const db = createDb(c.env.DATABASE_URL)
+      return c.json(await listUsers(db, c.req.valid('query')))
+    },
+  )
+  .patch(
+    '/:id',
+    requireAuth,
+    requireAdmin,
+    zValidator('param', z.object({ id: z.uuid() })),
+    zValidator('json', z.object({ role: z.enum(USER_ROLES) })),
+    async (c) => {
+      const { id } = c.req.valid('param')
+      // 관리자가 스스로를 강등해 콘솔에서 잠기는 사고를 막는다
+      if (id === c.get('user').id) {
+        return c.json({ error: '자신의 권한은 변경할 수 없습니다' }, 400)
+      }
+      const db = createDb(c.env.DATABASE_URL)
+      const user = await updateUserRole(db, id, c.req.valid('json').role)
+      if (!user) return c.json({ error: '사용자를 찾을 수 없습니다' }, 404)
+      return c.json(user)
+    },
+  )

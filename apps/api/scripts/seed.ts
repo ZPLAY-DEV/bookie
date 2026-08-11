@@ -54,7 +54,7 @@ type LessonSeed = {
 const WEEK1_LESSONS: LessonSeed[] = [
   {
     dayIndex: 1,
-    category: '책놀이',
+    category: '책톡',
     title: '『시원한 책』 같은 것을 다르게 느낀다',
     description:
       '같은 매운탕을 두고 아빠는 "시원하다~", 아이는 갸우뚱! 그림카드를 몸/마음 보드에 분류하고 투표 놀이로 서로의 느낌을 비교합니다.',
@@ -77,7 +77,7 @@ const WEEK1_LESSONS: LessonSeed[] = [
   },
   {
     dayIndex: 2,
-    category: '미술',
+    category: '그림톡',
     title: '마음 온도! 색으로 느끼기',
     description:
       '어제 읽은 『시원한 책』의 느낌을 색으로 옮겨요. 쿨톤·웜톤 색카드로 마음의 온도를 나누고 컬러칩으로 내 마음 온도를 찾습니다.',
@@ -100,7 +100,7 @@ const WEEK1_LESSONS: LessonSeed[] = [
   },
   {
     dayIndex: 3,
-    category: '음악',
+    category: '소리톡',
     title: '소리 속의 리듬 — 다른 소리가 모여',
     description:
       '시원한 소리 음원을 듣고, 손뼉·발구르기로 소리를 리듬으로 바꾼 뒤 분단 리듬 표시판을 보며 다 함께 합주합니다.',
@@ -128,7 +128,7 @@ const WEEK1_LESSONS: LessonSeed[] = [
   },
   {
     dayIndex: 4,
-    category: '신체',
+    category: '몸톡',
     title: '속이 뻥! 시원한 몸',
     description:
       '방귀 이야기로 웃으며 열고 복식호흡을 배워요. 체조 동작 카드를 따라 매트 위에서 몸을 풀며 시원함을 몸으로 느낍니다.',
@@ -160,7 +160,7 @@ const WEEK1_LESSONS: LessonSeed[] = [
   },
   {
     dayIndex: 5,
-    category: '사회정서',
+    category: '마음톡',
     title: '시원한 말, 따뜻한 말',
     description:
       '"속 시원하다!"는 말, 항상 좋은 말일까요? 말 카드로 말의 온도를 배우고 말 전하기 판으로 마음이 닿는 말을 연습해요.',
