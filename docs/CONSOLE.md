@@ -52,7 +52,7 @@ console (Refine :5174)
 
 **사용자 모델**: `users` 테이블(id = auth user id, social_user_id, name, role, profile_image_url) — auth 계정이 있어도 `users.role = 'admin'`이 아니면 콘솔 접근 불가. 관리자 발급 = `users`에 role=admin 행 추가.
 
-**강사 온보딩 (사전 등록 → 자동 승인)**: auth 계정이 생기면 트리거가 `users`에 `role='pending'` 행을 자동 생성한다. 콘솔의 **강사 소속(associations)** 메뉴에서 매니저가 학교 + 강사 이메일/전화를 미리 등록해 두면(invited), 강사가 웹에 로그인할 때 `/api/users/me`가 매칭해 소속을 연결(active)하고 `role='teacher'`로 자동 승인한다. 매칭이 없으면 웹에는 "승인 대기" 화면이 뜬다. 복수 학교 소속이면 웹에서 학교 선택 화면이 나온다. API 권한: weeks/lessons **읽기 = teacher 이상**(`requireMember`), **쓰기 = admin**(`requireAdmin`), schools/associations = admin 전용.
+**강사 온보딩 (사전 등록 → 자동 승인)**: auth 계정이 생기면 트리거가 `users`에 `role='pending'` 행을 자동 생성한다. 콘솔의 **소속(associations)** 메뉴에서 매니저가 학교 + 강사 이메일/전화를 미리 등록해 두면(invited), 강사가 웹에 로그인할 때 `/api/users/me`가 매칭해 소속을 연결(active)하고 `role='teacher'`로 자동 승인한다. 매칭이 없으면 웹에는 "승인 대기" 화면이 뜬다. 복수 학교 소속이면 웹에서 학교 선택 화면이 나온다. API 권한: weeks/lessons **읽기 = teacher 이상**(`requireMember`), **쓰기 = admin**(`requireAdmin`), schools/associations = admin 전용.
 
 **로컬 개발 계정**: `a@gmail.com / 111111`. Studio(http://127.0.0.1:54323) > Authentication에서 계정을 만들고 `pnpm db:seed`를 실행하면 해당 계정이 role=admin으로 연결된다. 비밀번호는 config.toml의 `minimum_password_length = 6` 이상이어야 한다. (회원가입 UI는 콘솔에 노출하지 않음 — 관리자 계정은 수동 발급)
 

@@ -29,7 +29,7 @@
 | 접근제어 | 로그인 강사만 콘텐츠 조회(`requireMember`), 쓰기는 관리자만(`requireAdmin`) | 명세 §10 "접근제어(로그인 강사만)" 결정 이행 |
 | 인증 | 이메일 + 카카오 로그인(Supabase Auth), auth.users → users 자동 생성 트리거 | 카카오 앱 "북키톡키" |
 | 강사 온보딩 | `schools`/`associations` — 매니저 사전 등록(이메일/전화) → 로그인 시 자동 승인, 복수 학교 소속 시 학교 선택 UI | 명세 외 추가 요구 반영 |
-| 관리자 콘솔 | Refine 기반 — 주차/수업(목록·상세·편집)/학교/강사 소속 CRUD, admin_users 뷰로 관리자 검증 | console (5174) |
+| 관리자 콘솔 | Refine 기반 — 주차/수업(목록·상세·편집)/학교/소속 CRUD, admin_users 뷰로 관리자 검증 | console (5174) |
 | 배포 | web=bktk.kr(+www), api=api.bktk.kr(Workers), bktk.co.kr→bktk.kr 301, Supabase 원격(서울) | |
 
 ### 🚧 부분 구현 (명세와 차이 있음)

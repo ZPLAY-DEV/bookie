@@ -13,7 +13,7 @@ export type User = {
   phone: string | null;
 };
 
-// pending = 가입 직후 기본 상태. 사전 등록(강사 소속) 매칭으로 자동 승인되거나
+// pending = 가입 직후 기본 상태. 사전 등록(소속) 매칭으로 자동 승인되거나
 // 관리자가 여기서 직접 올린다.
 const ROLE_OPTIONS = [
   { value: "pending", label: "승인 대기" },

@@ -91,7 +91,7 @@ function App() {
                     list: "/associations",
                     create: "/associations/create",
                     edit: "/associations/edit/:id",
-                    meta: { label: "강사 소속" },
+                    meta: { label: "소속" },
                   },
                   {
                     name: "users",
