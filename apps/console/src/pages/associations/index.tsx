@@ -67,17 +67,6 @@ export const AssociationList = () => {
           sorter
           render={(schoolId: number) => schoolName(schoolId)}
         />
-        <Table.Column dataIndex="email" title="이메일" />
-        <Table.Column dataIndex="phone" title="전화번호" />
-        <Table.Column
-          dataIndex="status"
-          title="상태"
-          sorter
-          render={(status: string) => {
-            const tag = STATUS_TAGS[status] ?? { color: "default", label: status };
-            return <Tag color={tag.color}>{tag.label}</Tag>;
-          }}
-        />
         <Table.Column
           dataIndex="userId"
           title="연결된 사용자"
@@ -95,6 +84,17 @@ export const AssociationList = () => {
                 {label}
               </Space>
             );
+          }}
+        />
+        <Table.Column dataIndex="email" title="이메일" />
+        <Table.Column dataIndex="phone" title="전화번호" />
+        <Table.Column
+          dataIndex="status"
+          title="상태"
+          sorter
+          render={(status: string) => {
+            const tag = STATUS_TAGS[status] ?? { color: "default", label: status };
+            return <Tag color={tag.color}>{tag.label}</Tag>;
           }}
         />
         <Table.Column<Association>
