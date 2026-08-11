@@ -100,8 +100,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex h-full items-center justify-center p-7">
-      <div className="w-full max-w-105 rounded-3xl border bg-card p-10 shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-background p-4 sm:p-7">
+      <div className="w-full max-w-105 rounded-3xl border bg-card p-7 shadow-sm sm:p-10">
         <div className="flex flex-col items-center text-center">
           <div className="relative">
             <button

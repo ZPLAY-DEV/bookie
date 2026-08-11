@@ -4,6 +4,7 @@ import {
   createRoute,
   createRouter,
   redirect,
+  useRouterState,
 } from '@tanstack/react-router'
 
 import { ScaledViewport } from '@/components/scaled-viewport'
@@ -20,14 +21,19 @@ async function requireSession() {
   if (!data.session) throw redirect({ to: '/login' })
 }
 
-// 모든 화면은 1920×1080 고정 캔버스에 원본 크기로 렌더되고, 뷰포트가 작으면 잘려 보인다
-const rootRoute = createRootRoute({
-  component: () => (
+// 로그인을 뺀 나머지 화면은 1920×1080 고정 캔버스에 렌더된다(뷰포트가 작으면 캔버스째 축소).
+// 로그인만 캔버스 밖에서 실제 뷰포트에 맞춰 렌더한다 — 좁은 화면에서 카드가 밀려나면 안 된다.
+function RootLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  if (pathname === '/login') return <Outlet />
+  return (
     <ScaledViewport>
       <Outlet />
     </ScaledViewport>
-  ),
-})
+  )
+}
+
+const rootRoute = createRootRoute({ component: RootLayout })
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
