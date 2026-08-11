@@ -1,5 +1,5 @@
 {
-  // bktk.co.kr 계열을 bktk.kr로 301 리다이렉트하는 전용 워커
+  // bktk.co.kr 계열을 zplay.co.kr/bktk로 301 리다이렉트하는 전용 워커
   "name": "redirect-bktk",
   "main": "worker.js",
   "compatibility_date": "2026-08-03",
