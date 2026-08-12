@@ -22,13 +22,35 @@ import { ColorModeContextProvider } from "./contexts/color-mode";
 import { Header } from "./components/header";
 import authProvider from "./providers/auth";
 
-// 특정 문구만 바꾸기 위한 최소 i18n — 나머지 키는 기본 문구를 그대로 통과시킨다
+// 특정 문구만 바꾸기 위한 최소 i18n — 나머지 키는 기본 문구를 그대로 통과시킨다.
+// refine 기본 버튼 라벨이 전부 영문이라 여기서 한국어로 덮는다.
+// (목록 버튼은 buttons.list가 아니라 리소스 meta.label을 쓰므로 여기 없다)
+const BUTTON_LABELS: Record<string, string> = {
+  "buttons.create": "새로 만들기",
+  "buttons.edit": "수정",
+  "buttons.show": "상세",
+  "buttons.clone": "복제",
+  "buttons.delete": "삭제",
+  "buttons.save": "저장",
+  "buttons.cancel": "취소",
+  "buttons.confirm": "정말로 삭제할까요?",
+  "buttons.refresh": "새로고침",
+  "buttons.filter": "필터",
+  "buttons.clear": "초기화",
+  "buttons.logout": "로그아웃",
+  "buttons.export": "내보내기",
+  "buttons.import": "가져오기",
+  "buttons.undo": "되돌리기",
+  "buttons.notAccessTitle": "접근 권한이 없습니다",
+  warnWhenUnsavedChanges:
+    "저장하지 않은 변경사항이 있습니다. 정말 나갈까요?",
+};
+
 const i18nProvider = {
   translate: (key: string, options?: unknown, defaultMessage?: string) => {
-    const overrides: Record<string, string> = {};
     const fallback =
       typeof options === "string" ? options : defaultMessage;
-    return overrides[key] ?? fallback ?? key;
+    return BUTTON_LABELS[key] ?? fallback ?? key;
   },
   changeLocale: () => Promise.resolve(),
   getLocale: () => "ko",
