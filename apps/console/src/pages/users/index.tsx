@@ -83,18 +83,6 @@ export const UserList = () => {
             </Space>
           )}
         />
-        <Table.Column
-          dataIndex="email"
-          title="이메일"
-          render={(email: string | null) =>
-            email ?? <Typography.Text type="danger">미제공</Typography.Text>
-          }
-        />
-        <Table.Column
-          dataIndex="phone"
-          title="전화번호"
-          render={(phone: string | null) => phone ?? "-"}
-        />
         <Table.Column<User>
           dataIndex="role"
           title="권한"
@@ -125,6 +113,18 @@ export const UserList = () => {
               maxLength={NOTE_MAX}
             />
           )}
+        />
+        <Table.Column
+          dataIndex="email"
+          title="이메일"
+          render={(email: string | null) =>
+            email ?? <Typography.Text type="danger">미제공</Typography.Text>
+          }
+        />
+        <Table.Column
+          dataIndex="phone"
+          title="전화번호"
+          render={(phone: string | null) => phone ?? "-"}
         />
         <Table.Column
           dataIndex="createdAt"
