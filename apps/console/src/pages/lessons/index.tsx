@@ -23,6 +23,15 @@ import {
   PlusOutlined,
   YoutubeOutlined,
 } from "@ant-design/icons";
+import {
+  faBook,
+  faHeart,
+  faImage,
+  faMusic,
+  faUniversalAccess,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { unzip } from "fflate";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
@@ -838,6 +847,38 @@ const YoutubeAddButton = ({ form }: { form: FormInstance }) => {
 const DAY_LABELS = ["월", "화", "수", "목", "금"];
 // 시트 규칙: 일차 ↔ 과목 고정 (1일차 책톡 … 5일차 마음톡)
 const DAY_CATEGORY = ["책톡", "그림톡", "소리톡", "몸톡", "마음톡"];
+// 과목 pill — 대표 아이콘 + 색
+const CATEGORY_PILL: Record<string, { icon: IconDefinition; color: string }> = {
+  책톡: { icon: faBook, color: "blue" },
+  그림톡: { icon: faImage, color: "magenta" },
+  소리톡: { icon: faMusic, color: "gold" },
+  몸톡: { icon: faUniversalAccess, color: "green" },
+  마음톡: { icon: faHeart, color: "purple" },
+};
+
+const CategoryPill = ({ category }: { category: string }) => {
+  const pill = CATEGORY_PILL[category];
+  return (
+    <Tag
+      color={pill?.color}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        // 2글자/3글자 과목이 섞여도 아이콘·글자 시작점이 세로로 맞도록 왼쪽 정렬 + 고정폭 아이콘
+        justifyContent: "flex-start",
+        gap: 6,
+        width: 70,
+        whiteSpace: "nowrap",
+        borderRadius: 999,
+        margin: 0,
+      }}
+    >
+      {pill && <FontAwesomeIcon icon={pill.icon} fixedWidth />}
+      {category}
+    </Tag>
+  );
+};
+
 const ACTIVITY_LABELS = ["활동 ①", "활동 ②", "활동 ③", "활동 ④"];
 // 파일명 규칙에 맞는 값이면 주차/일차 변경 시 자동으로 갱신해도 안전하다
 // (값은 full URL — 마지막 경로 조각의 파일명으로 판단)
@@ -915,7 +956,11 @@ export const LessonList = () => {
               field="category"
               value={record.category}
               type="select"
-              options={DAY_CATEGORY.map((c) => ({ label: c, value: c }))}
+              options={DAY_CATEGORY.map((c) => ({
+                label: <CategoryPill category={c} />,
+                value: c,
+              }))}
+              display={<CategoryPill category={record.category} />}
               required
             />
           )}
@@ -996,7 +1041,7 @@ export const LessonShow = () => {
               {lesson.dayIndex}일차({DAY_LABELS[lesson.dayIndex - 1] ?? "?"})
             </Descriptions.Item>
             <Descriptions.Item label="과목">
-              <Tag>{lesson.category}</Tag>
+              <CategoryPill category={lesson.category} />
             </Descriptions.Item>
             <Descriptions.Item label="수업 시간">
               {lesson.durationMin != null ? `${lesson.durationMin}분` : "-"}

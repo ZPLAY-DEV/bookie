@@ -14,16 +14,20 @@ export const InlineEditCell = ({
   required,
   placeholder,
   suffix,
+  maxLength,
+  display: displayNode,
 }: {
   resource: string;
   id: number | string; // users는 uuid
   field: string;
   value: string | number | null;
   type?: "text" | "number" | "select";
-  options?: { label: string; value: string }[];
+  options?: { label: React.ReactNode; value: string }[];
   required?: boolean;
   placeholder?: string;
   suffix?: string; // 표시용 단위 (예: "분")
+  maxLength?: number; // text 입력 글자수 상한 (컬럼 길이 제한이 있는 필드)
+  display?: React.ReactNode; // 값 대신 보여줄 노드 (예: 과목 pill)
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | number | null>(null);
@@ -94,6 +98,7 @@ export const InlineEditCell = ({
         autoFocus
         value={String(draft ?? "")}
         placeholder={placeholder}
+        maxLength={maxLength}
         disabled={mutation.isPending}
         onChange={(e) => setDraft(e.target.value)}
         onPressEnter={saveText}
@@ -120,7 +125,7 @@ export const InlineEditCell = ({
         style={{ cursor: "pointer", display: "block" }}
         type={display ? undefined : "secondary"}
       >
-        {display ?? "— 비어 있음"}
+        {display == null ? "— 비어 있음" : (displayNode ?? display)}
       </Typography.Text>
     </Tooltip>
   );
