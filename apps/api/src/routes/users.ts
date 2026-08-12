@@ -8,11 +8,12 @@ import { requireAdmin, requireAuth } from '../middleware/auth'
 import {
   USER_ROLES,
   claimAssociations,
+  getAdminUser,
   getUser,
   joinDefaultSchool,
   listUserAssociations,
   listUsers,
-  updateUserRole,
+  updateUser,
 } from '../services/user.service'
 
 const userListQuerySchema = listQuerySchema(
@@ -66,20 +67,47 @@ export const users = new Hono<AppEnv>()
       return c.json(await listUsers(db, c.req.valid('query')))
     },
   )
+  .get(
+    '/:id',
+    requireAuth,
+    requireAdmin,
+    zValidator('param', z.object({ id: z.uuid() })),
+    async (c) => {
+      const db = createDb(c.env.DATABASE_URL)
+      const user = await getAdminUser(db, c.req.valid('param').id)
+      if (!user) return c.json({ error: '사용자를 찾을 수 없습니다' }, 404)
+      return c.json(user)
+    },
+  )
   .patch(
     '/:id',
     requireAuth,
     requireAdmin,
     zValidator('param', z.object({ id: z.uuid() })),
-    zValidator('json', z.object({ role: z.enum(USER_ROLES) })),
+    zValidator(
+      'json',
+      z.object({
+        role: z.enum(USER_ROLES).optional(),
+        note: z.string().max(64).nullable().optional(),
+      }),
+    ),
     async (c) => {
       const { id } = c.req.valid('param')
-      // 관리자가 스스로를 강등해 콘솔에서 잠기는 사고를 막는다
-      if (id === c.get('user').id) {
-        return c.json({ error: '자신의 권한은 변경할 수 없습니다' }, 400)
-      }
+      const { role, note } = c.req.valid('json')
       const db = createDb(c.env.DATABASE_URL)
-      const user = await updateUserRole(db, id, c.req.valid('json').role)
+      // 관리자가 스스로를 강등해 콘솔에서 잠기는 사고를 막는다. 수정 폼은 role을
+      // 항상 함께 보내므로 "실제로 바뀔 때"만 막아야 자기 메모 수정이 가능하다.
+      if (role !== undefined && id === c.get('user').id) {
+        const current = await getUser(db, id)
+        if (current && current.role !== role) {
+          return c.json({ error: '자신의 권한은 변경할 수 없습니다' }, 400)
+        }
+      }
+      const user = await updateUser(db, id, {
+        ...(role !== undefined && { role }),
+        // 빈 문자열로 비운 메모는 null로 저장
+        ...(note !== undefined && { note: note?.trim() || null }),
+      })
       if (!user) return c.json({ error: '사용자를 찾을 수 없습니다' }, 404)
       return c.json(user)
     },

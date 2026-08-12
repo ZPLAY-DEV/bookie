@@ -39,10 +39,20 @@ export async function listUsers(
   return { data, total }
 }
 
-export async function updateUserRole(db: Database, id: string, role: UserRole) {
+// 콘솔 상세/수정용 단건 — 목록과 같은 확장 뷰에서 읽어 email·phone까지 포함한다
+export async function getAdminUser(db: Database, id: string) {
+  const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, id))
+  return user ?? null
+}
+
+export async function updateUser(
+  db: Database,
+  id: string,
+  values: { role?: UserRole; note?: string | null },
+) {
   const [user] = await db
     .update(users)
-    .set({ role })
+    .set(values)
     .where(eq(users.id, id))
     .returning()
   return user ?? null

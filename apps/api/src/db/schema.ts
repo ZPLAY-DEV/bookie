@@ -7,6 +7,7 @@ import {
   text,
   timestamp,
   uuid,
+  varchar,
 } from 'drizzle-orm/pg-core'
 
 // Supabase Auth 사용자(auth.users)와 1:1로 매핑되는 앱 사용자.
@@ -18,6 +19,7 @@ export const users = pgTable('users', {
   name: text('name'),
   role: text('role').notNull().default('pending'), // pending | teacher | admin
   profileImageUrl: text('profile_image_url'),
+  note: varchar('note', { length: 64 }), // 관리자용 메모
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -68,6 +70,7 @@ export const adminUsers = pgView('admin_users', {
   role: text('role').notNull(),
   profileImageUrl: text('profile_image_url'),
   socialUserId: text('social_user_id'),
+  note: varchar('note', { length: 64 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   email: text('email'),
   phone: text('phone'),

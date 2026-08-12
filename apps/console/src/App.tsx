@@ -47,7 +47,7 @@ import {
   AssociationList,
 } from "./pages/associations";
 import { LoginPage } from "./pages/login";
-import { UserList } from "./pages/users";
+import { UserEdit, UserList, UserShow } from "./pages/users";
 
 function App() {
   return (
@@ -96,6 +96,8 @@ function App() {
                   {
                     name: "users",
                     list: "/users",
+                    edit: "/users/edit/:id",
+                    show: "/users/show/:id",
                     meta: { label: "사용자" },
                   },
                 ]}
@@ -169,6 +171,8 @@ function App() {
                     </Route>
                     <Route path="/users">
                       <Route index element={<UserList />} />
+                      <Route path="edit/:id" element={<UserEdit />} />
+                      <Route path="show/:id" element={<UserShow />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
