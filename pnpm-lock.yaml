@@ -50,6 +50,9 @@ importers:
       '@ant-design/icons':
         specifier: ^5.5.1
         version: 5.6.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@bookie/lesson-meta':
+        specifier: workspace:*
+        version: link:../../packages/lesson-meta
       '@ffmpeg/ffmpeg':
         specifier: ^0.12.15
         version: 0.12.15
@@ -153,6 +156,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@bookie/lesson-meta':
+        specifier: workspace:*
+        version: link:../../packages/lesson-meta
       '@fontsource-variable/figtree':
         specifier: ^5.3.0
         version: 5.3.0
@@ -247,6 +253,8 @@ importers:
       vite:
         specifier: ^8.2.0
         version: 8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)
+
+  packages/lesson-meta: {}
 
 packages:
 

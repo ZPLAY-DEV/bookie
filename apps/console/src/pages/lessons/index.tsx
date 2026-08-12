@@ -32,6 +32,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+// 일차 ↔ 과목 매핑은 web과 공유하는 규칙 — 정의는 이 패키지 한 곳뿐이다
+import { DAY_CATEGORY } from "@bookie/lesson-meta";
 import { unzip } from "fflate";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
@@ -863,23 +865,32 @@ const YoutubeAddButton = ({ form }: { form: FormInstance }) => {
 };
 
 const DAY_LABELS = ["월", "화", "수", "목", "금"];
-// 시트 규칙: 일차 ↔ 과목 고정 (1일차 책톡 … 5일차 마음톡)
-const DAY_CATEGORY = ["책톡", "그림톡", "소리톡", "몸톡", "마음톡"];
-// 과목 pill — 대표 아이콘 + 색
-const CATEGORY_PILL: Record<string, { icon: IconDefinition; color: string }> = {
-  책톡: { icon: faBook, color: "blue" },
-  그림톡: { icon: faImage, color: "magenta" },
-  소리톡: { icon: faMusic, color: "gold" },
-  몸톡: { icon: faUniversalAccess, color: "green" },
-  마음톡: { icon: faHeart, color: "purple" },
+// 과목 pill — 대표 아이콘 + 색. antd 프리셋 이름을 쓰면 지정 hex와 섞였을 때
+// 그 칩만 단색 채움으로 튀므로 전부 hex로 두고 연한 배경을 직접 만든다.
+// 색의 출처는 web 앱의 디자인 팔레트(apps/web/src/lib/lesson-meta.ts) —
+// 값이 갈리면 그쪽을 기준으로 맞춘다.
+// labelColor: 옅은 배경 위 글자색. 책톡 노랑(#ffc02d)은 그대로 쓰면 읽기 어려워
+// web과 같은 진한 주황을 쓴다.
+const CATEGORY_PILL: Record<
+  string,
+  { icon: IconDefinition; color: string; labelColor?: string }
+> = {
+  책톡: { icon: faBook, color: "#ffc02d", labelColor: "#f5a031" }, // 노랑
+  그림톡: { icon: faImage, color: "#f3505c" }, // 빨강
+  소리톡: { icon: faMusic, color: "#bc52cb" }, // 보라
+  몸톡: { icon: faUniversalAccess, color: "#2dbcb6" }, // 터콰이즈
+  마음톡: { icon: faHeart, color: "#f571a0" }, // 핑크
 };
 
 const CategoryPill = ({ category }: { category: string }) => {
   const pill = CATEGORY_PILL[category];
   return (
     <Tag
-      color={pill?.color}
       style={{
+        // 프리셋 태그와 같은 결 — 글자·아이콘은 진한 색, 배경/테두리는 같은 색의 옅은 알파
+        color: pill && (pill.labelColor ?? pill.color),
+        background: pill && `${pill.color}1A`,
+        borderColor: pill && `${pill.color}40`,
         display: "inline-flex",
         alignItems: "center",
         // 2글자/3글자 과목이 섞여도 아이콘·글자 시작점이 세로로 맞도록 왼쪽 정렬 + 고정폭 아이콘
@@ -1357,7 +1368,7 @@ const LessonForm = ({
             <Form.Item label="일차" name="dayIndex" rules={[{ required: true }]}>
               <Select
                 options={DAY_LABELS.map((label, i) => ({
-                  label: `${i + 1}일차 (${label}) · ${DAY_CATEGORY[i]}`,
+                  label: `${i + 1}일차 (${label})`,
                   value: i + 1,
                 }))}
               />
