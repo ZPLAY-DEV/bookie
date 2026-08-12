@@ -293,7 +293,7 @@ const FileSlot = ({
 };
 
 /* ---- 슬라이드 ZIP 업로드 ----
- * zip(1.png ~ n.png) → 브라우저에서 압축 해제 → 같은 해상도의 WebP(quality 0.8)로
+ * zip(1.png ~ n.png, jpg/jpeg도 가능) → 브라우저에서 압축 해제 → 같은 해상도의 WebP(quality 0.8)로
  * 변환 → presign으로 R2 lessons/w{주차}d{일차}/{n}.webp 업로드 → 미디어 재생목록 채움
  */
 const WEBP_QUALITY = 0.8;
@@ -305,11 +305,24 @@ function unzipAsync(bytes: Uint8Array): Promise<Record<string, Uint8Array>> {
   );
 }
 
-// 같은 해상도의 WebP로 변환. 인코딩 미지원 브라우저(Safari)는 원본 PNG 그대로.
-async function toWebp(bytes: Uint8Array): Promise<{ blob: Blob; ext: string }> {
-  const png = new Blob([bytes as BlobPart], { type: "image/png" });
+// zip 안에서 슬라이드로 인정하는 원본 확장자 → MIME
+const SLIDE_SOURCE_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+};
+const SLIDE_SOURCE_NAME = /^(\d+)\.(png|jpe?g)$/i;
+
+// 같은 해상도의 WebP로 변환. 인코딩 미지원 브라우저(Safari)는 원본 그대로.
+async function toWebp(
+  bytes: Uint8Array,
+  sourceExt: string
+): Promise<{ blob: Blob; ext: string }> {
+  const original = new Blob([bytes as BlobPart], {
+    type: SLIDE_SOURCE_MIME[sourceExt],
+  });
   try {
-    const bmp = await createImageBitmap(png);
+    const bmp = await createImageBitmap(original);
     const canvas = new OffscreenCanvas(bmp.width, bmp.height);
     canvas.getContext("2d")?.drawImage(bmp, 0, 0);
     bmp.close();
@@ -321,7 +334,7 @@ async function toWebp(bytes: Uint8Array): Promise<{ blob: Blob; ext: string }> {
   } catch {
     // 디코드/인코드 실패 시 원본 폴백
   }
-  return { blob: png, ext: "png" };
+  return { blob: original, ext: sourceExt };
 }
 
 // PDF 미리보기 — cdn URL은 attachment 헤더 때문에 무조건 다운로드되므로,
@@ -473,15 +486,17 @@ const SlideZipUpload = ({
       const slides = Object.entries(files)
         .map(([path, bytes]) => {
           const base = path.split("/").pop() ?? "";
-          const m = /^(\d+)\.png$/i.exec(base);
+          const m = SLIDE_SOURCE_NAME.exec(base);
           return m && !path.startsWith("__MACOSX") && bytes.length > 0
-            ? { no: Number(m[1]), bytes }
+            ? { no: Number(m[1]), ext: m[2].toLowerCase(), bytes }
             : null;
         })
-        .filter((s): s is { no: number; bytes: Uint8Array } => s !== null)
+        .filter(
+          (s): s is { no: number; ext: string; bytes: Uint8Array } => s !== null
+        )
         .sort((a, b) => a.no - b.no);
       if (slides.length === 0) {
-        throw new Error("ZIP에서 1.png 형식의 슬라이드를 찾지 못했어요");
+        throw new Error("ZIP에서 1.png / 1.jpg 형식의 슬라이드를 찾지 못했어요");
       }
 
       // WebP 변환 + 업로드 (동시 5개)
@@ -490,7 +505,7 @@ const SlideZipUpload = ({
       const queue = [...slides];
       const worker = async () => {
         for (let s = queue.shift(); s; s = queue.shift()) {
-          const { blob, ext } = await toWebp(s.bytes);
+          const { blob, ext } = await toWebp(s.bytes, s.ext);
           const filename = `${s.no}.${ext}`;
           await uploadToR2(`lessons/${prefix}/${filename}`, blob);
           results.push({ no: s.no, url: ruleFileUrl(prefix, filename) });
@@ -556,7 +571,10 @@ const SlideZipUpload = ({
             <p style={{ fontSize: 32, margin: 0 }}>
               <FileZipOutlined />
             </p>
-            <p>1.png ~ n.png 가 담긴 ZIP을 드래그하거나 클릭해서 선택하세요</p>
+            <p>
+              슬라이드 이미지들이 압축된 ZIP파일을 선택하세요. (png 또는 jpg
+              포맷만 지원합니다.)
+            </p>
             <Typography.Text type="secondary">
               같은 해상도의 WebP로 변환되어 lessons/{prefix}/ 에 업로드됩니다
             </Typography.Text>
